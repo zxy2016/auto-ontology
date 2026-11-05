@@ -211,6 +211,13 @@ _NON_REASONING_MODEL_NAME = resolve("NON_REASONING", "MODEL")
 _NON_REASONING_API_KEY = resolve("NON_REASONING", "API_KEY")
 
 
+# 非 NVIDIA 官方网关时，强制所有模型走 ChatOpenAI（任意 OpenAI 兼容端点）。
+_FORCE_OPENAI_CLIENT = os.environ.get("LLM_CLIENT", "").strip().lower() in {
+    "openai",
+    "openai-compatible",
+}
+
+
 def _build_client(
     *,
     model: str,
@@ -223,9 +230,10 @@ def _build_client(
 
     OpenAI-family models (``openai/``, ``azure/``, ``aws/`` prefixes) go through
     ``ChatOpenAI``, which supports structured output. Everything else uses
-    ``ChatNVIDIA``.
+    ``ChatNVIDIA``。设置 ``LLM_CLIENT=openai`` 时也统一走 ``ChatOpenAI``，
+    以便接入任意 OpenAI 兼容端点。
     """
-    if model.startswith(("openai/", "azure/", "aws/")):
+    if _FORCE_OPENAI_CLIENT or model.startswith(("openai/", "azure/", "aws/")):
         from langchain_openai import ChatOpenAI
 
         return ChatOpenAI(
@@ -474,6 +482,11 @@ def _structured_output_kwargs(llm: BaseChatModel) -> dict:
     """
     if _is_claude(llm):
         return {"method": "function_calling", "tool_choice": None}
+    # 部分 OpenAI 兼容服务不支持 response_format=json_schema，可用
+    # LLM_STRUCTURED_OUTPUT=function_calling 切到工具调用方式。
+    method = os.environ.get("LLM_STRUCTURED_OUTPUT", "").strip().lower()
+    if method in {"function_calling", "json_schema", "json_mode"}:
+        return {"method": method}
     return {}
 
 

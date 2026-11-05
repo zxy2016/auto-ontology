@@ -23,6 +23,7 @@ from __future__ import annotations
 import itertools
 import logging
 import math
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -51,6 +52,12 @@ InputType = Literal["passage", "query"]
 # the inference-api nvfp4 deployment drops it: the hosted
 # ``nvidia/nemotron-3.5-embed-1b`` on build.nvidia.com honours ``input_type``.
 _TEXT_PREFIXED_MODELS = ("nemotron-3.5-embed-1b-nvfp4",)
+
+# NVIDIA 端点接受 extra_body 里的 input_type/truncate/modality；严格的 OpenAI
+# 兼容服务会因未知字段返回 400，置为 false 时不发送这三个字段。
+_SEND_NVIDIA_PARAMS = os.environ.get(
+    "EMBED_SEND_NVIDIA_PARAMS", "true"
+).strip().lower() not in {"false", "0", "no"}
 
 # Each field falls back to DEFAULT_MODELS_<field>.
 _EMBED_ENDPOINT = resolve("EMBED", "ENDPOINT")
@@ -185,15 +192,20 @@ def embed_texts(
     prefix = _text_prefix(params.model_name, input_type)
 
     def _embed_batch(indices: tuple[int, ...]) -> None:
+        extra_body = (
+            {
+                "input_type": input_type,
+                "truncate": "END",
+                "modality": params.embed_modality,
+            }
+            if _SEND_NVIDIA_PARAMS
+            else None
+        )
         response = client.embeddings.create(
             model=params.model_name,
             input=[prefix + stripped[i] for i in indices],
             encoding_format="float",
-            extra_body={
-                "input_type": input_type,
-                "truncate": "END",
-                "modality": params.embed_modality,
-            },
+            extra_body=extra_body,
             timeout=timeout or params.request_timeout_s,
             extra_headers=None if params.api_key else _NO_AUTH,
         )

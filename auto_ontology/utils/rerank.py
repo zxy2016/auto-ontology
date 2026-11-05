@@ -20,6 +20,7 @@ Any other URL is treated as a NIM base and gets ``/v1/ranking`` appended.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import httpx
@@ -34,6 +35,13 @@ _RERANK_MODEL = resolve("RERANK", "MODEL")
 _RERANK_API_KEY = resolve("RERANK", "API_KEY")
 
 _TIMEOUT_S = 30.0
+
+# 没有 rerank 服务时置为 false，调用方直接保留原顺序，不再请求端点。
+_RERANK_ENABLED = os.environ.get("RERANK_ENABLED", "true").strip().lower() not in {
+    "false",
+    "0",
+    "no",
+}
 
 
 def get_rerank_kwargs() -> dict[str, str]:
@@ -109,7 +117,7 @@ def rerank_hits(
     A hit that already carries ``_rerank_score`` keeps it. Ties keep their
     input order. Raises on an endpoint error; the caller picks the fallback.
     """
-    if not hits:
+    if not hits or not _RERANK_ENABLED:
         return hits
     scores = _scores(
         query,

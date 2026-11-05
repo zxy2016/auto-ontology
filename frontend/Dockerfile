@@ -44,9 +44,14 @@ RUN apt-get update \
 FROM base-node AS deps
 
 ARG PNPM_VERSION
+# 允许通过构建参数切换 npm 源（默认保持官方源）
+ARG COREPACK_NPM_REGISTRY=https://registry.npmjs.org
+ARG NPM_CONFIG_REGISTRY=https://registry.npmjs.org
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
-    CI=1
+    CI=1 \
+    COREPACK_NPM_REGISTRY=${COREPACK_NPM_REGISTRY} \
+    npm_config_registry=${NPM_CONFIG_REGISTRY}
 
 RUN npm install -g --silent corepack@latest \
  && corepack enable \
@@ -72,12 +77,17 @@ FROM base-node AS builder
 ARG PYTHON_API_URL=http://auto-ontology:3001
 
 ARG PNPM_VERSION
+# 允许通过构建参数切换 npm 源（默认保持官方源）
+ARG COREPACK_NPM_REGISTRY=https://registry.npmjs.org
+ARG NPM_CONFIG_REGISTRY=https://registry.npmjs.org
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     CI=1 \
     NEXT_TELEMETRY_DISABLED=1 \
     NEXT_OUTPUT=standalone \
-    PYTHON_API_URL=${PYTHON_API_URL}
+    PYTHON_API_URL=${PYTHON_API_URL} \
+    COREPACK_NPM_REGISTRY=${COREPACK_NPM_REGISTRY} \
+    npm_config_registry=${NPM_CONFIG_REGISTRY}
 
 RUN npm install -g --silent corepack@latest \
  && corepack enable \
