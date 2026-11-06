@@ -11,6 +11,7 @@ is otherwise storage- and library-agnostic.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
@@ -21,6 +22,8 @@ from auto_ontology.catalog.normalize import normalize_columns, normalize_tables
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from auto_ontology.connectors.base import SQLDatabase
 
+logger = logging.getLogger(__name__)
+
 
 class IncompleteCatalogExtractionError(RuntimeError):
     """Raised when listed relations do not have a complete column inventory."""
@@ -29,52 +32,85 @@ class IncompleteCatalogExtractionError(RuntimeError):
 def _relation_keys(frame: "pd.DataFrame | None") -> set[tuple[str, str]]:
     if frame is None or frame.empty:
         return set()
-    keys: set[tuple[str, str]] = set()
-    for _, row in frame.iterrows():
-        raw_schema = row.get("table_schema")
-        raw_table = row.get("table_name")
-        schema = "" if pd.isna(raw_schema) else str(raw_schema)
-        table = "" if pd.isna(raw_table) else str(raw_table)
-        if table:
-            keys.add((schema, table))
-    return keys
+    keys = {_row_relation_key(row) for _, row in frame.iterrows()}
+    return {key for key in keys if key[1]}
 
 
-def _validate_relation_column_coverage(
+def _drop_undescribed_relations(
     tables: "pd.DataFrame | None", columns: "pd.DataFrame | None"
-) -> None:
-    """Fail closed when a connector lists relations it could not describe.
+) -> set[tuple[str, str]]:
+    """Return relations that were listed but have no columns, logging each skip.
 
-    The contract every connector owes this function: **never report a relation
-    in ``get_tables()``/``get_views()`` that ``get_columns()`` has no rows for.**
-    A table map with zero columns is what a partial extraction looks like from
-    here, and it is indistinguishable from a complete one — the catalog lands,
-    retrieval offers the table, and every generated query against it fails.
-
-    Meeting the contract is the connector's job, not this function's, because
-    only the connector knows whether one relation failed or the whole scope did.
-    :meth:`auto_ontology.connectors.kyuubi.KyuubiDatabase._introspect` and
-    :meth:`auto_ontology.connectors.databricks.DatabricksDatabase._describe_pass` both drop
-    a relation they cannot describe from *both* frames, and both raise when the
-    failure is scope-wide rather than per-relation. This is the backstop for a
-    connector that gets that wrong: it turns a silently incomplete catalog into
-    a loud failure before anything is written.
+    A relation with zero columns cannot be queried, and persisting it would make
+    retrieval offer a table every generated query fails against. One such
+    relation must not roll back the whole catalog, though: connectors encounter
+    broken views (MySQL 1356 against a dropped base table) alongside healthy
+    tables, and failing the entire database over one of them leaves the operator
+    with nothing. Connectors are still expected to drop a relation they cannot
+    describe from both frames (Kyuubi and Databricks do); this is the central
+    backstop for the ones that cannot.
     """
     listed = _relation_keys(tables)
     if not listed:
-        return
+        return set()
     described = _relation_keys(columns)
     missing = sorted(listed - described)
     if not missing:
-        return
+        return set()
     preview = ", ".join(
         f"{schema + '.' if schema else ''}{table}" for schema, table in missing[:10]
     )
     suffix = "" if len(missing) <= 10 else f" (+{len(missing) - 10} more)"
-    raise IncompleteCatalogExtractionError(
-        f"Catalog extraction listed {len(listed)} relation(s), but "
-        f"{len(missing)} had no described columns: {preview}{suffix}"
+    logger.warning(
+        "Catalog extraction skipped %d relation(s) without columns: %s%s. "
+        "The remaining relations were ingested; configure table_deny_regex "
+        "to exclude these permanently.",
+        len(missing),
+        preview,
+        suffix,
     )
+    return set(missing)
+
+
+def _row_relation_key(row: "pd.Series") -> tuple[str, str]:
+    raw_schema = row.get("table_schema")
+    raw_table = row.get("table_name")
+    schema = "" if pd.isna(raw_schema) else str(raw_schema)
+    table = "" if pd.isna(raw_table) else str(raw_table)
+    return schema, table
+
+
+def _drop_relations(
+    frame: "pd.DataFrame | None", dropped: set[tuple[str, str]]
+) -> "pd.DataFrame | None":
+    if frame is None or frame.empty or not dropped:
+        return frame
+    if "table_schema" not in frame.columns or "table_name" not in frame.columns:
+        return frame
+    keep = [
+        key not in dropped
+        for key in (_row_relation_key(row) for _, row in frame.iterrows())
+    ]
+    return frame[keep]
+
+
+def _drop_fk_rows(
+    fks: "pd.DataFrame | None", dropped: set[tuple[str, str]]
+) -> "pd.DataFrame | None":
+    """Drop FKs whose owning or referenced relation was skipped."""
+    if fks is None or fks.empty or not dropped:
+        return fks
+    keep = []
+    for _, row in fks.iterrows():
+        owner = _row_relation_key(row)
+        raw_ref_schema = row.get("referenced_schema")
+        raw_ref_table = row.get("referenced_table")
+        referenced = (
+            "" if pd.isna(raw_ref_schema) else str(raw_ref_schema),
+            "" if pd.isna(raw_ref_table) else str(raw_ref_table),
+        )
+        keep.append(owner not in dropped and referenced not in dropped)
+    return fks[keep]
 
 
 def create_dataframe(connector: "SQLDatabase"):
@@ -82,9 +118,9 @@ def create_dataframe(connector: "SQLDatabase"):
 
     The connector's optional ``table_filter`` (set from the connection's
     allow/deny regexes, see :mod:`auto_ontology.catalog.table_filter`) is applied
-    here, before column-coverage validation — this is the single point every
-    connector's relations pass through, so the filter behaves identically for
-    all of them.
+    here, before undescribed relations are dropped — this is the single point
+    every connector's relations pass through, so both behaviours are identical
+    for all of them.
     """
     tables = connector.get_tables()
     columns = connector.get_columns()
@@ -98,7 +134,12 @@ def create_dataframe(connector: "SQLDatabase"):
         views,
         getattr(connector, "table_filter", None) or table_filter.TableFilter(),
     )
-    _validate_relation_column_coverage(tables, columns)
+    dropped = _drop_undescribed_relations(tables, columns)
+    if dropped:
+        tables = _drop_relations(tables, dropped)
+        views = _drop_relations(views, dropped)
+        pks = _drop_relations(pks, dropped)
+        fks = _drop_fk_rows(fks, dropped)
     return tables, columns, views, queries, pks, fks
 
 

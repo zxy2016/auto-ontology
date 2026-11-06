@@ -177,6 +177,43 @@ def test_batches_and_reassembles_in_input_order(endpoint) -> None:
     assert sorted(len(json.loads(r.content)["input"]) for r in seen) == [1, 2, 2]
 
 
+def test_a_batch_size_rejection_is_split_and_retried(endpoint) -> None:
+    """服务商批次上限更低时，自动拆小重试并记住，而不是让整次嵌入失败。"""
+    model = "nvidia/embed-batch-limit"
+
+    def _limit(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        if len(body["input"]) > 20:
+            return httpx.Response(
+                400,
+                json={
+                    "error": {
+                        "message": (
+                            "Value error, batch size is invalid, "
+                            "it should not be larger than 20"
+                        )
+                    }
+                },
+            )
+        return _ok(request)
+
+    seen = endpoint(_limit)
+    texts = [f"text-{i}" for i in range(45)]
+
+    vectors = embed_texts(
+        texts, _params(model_name=model, inference_batch_size=32), "passage"
+    )
+
+    assert vectors == [_vector(t) for t in texts]
+
+    # 第一次会先按 32 试一次；上限被记住后，第二次调用不再发出超限请求。
+    seen.clear()
+    embed_texts(texts, _params(model_name=model, inference_batch_size=32), "passage")
+
+    assert all(len(json.loads(r.content)["input"]) <= 20 for r in seen)
+    assert sum(len(json.loads(r.content)["input"]) for r in seen) == len(texts)
+
+
 def test_a_short_response_is_an_error_not_a_partial_batch(endpoint) -> None:
     """Silently leaving the missing rows unembedded would drop them from the store."""
 

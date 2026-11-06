@@ -43,7 +43,7 @@ from auto_ontology.dal.attributes import (
     set_semantic_fk_join_default,
 )
 from auto_ontology.retrieval.text_to_sql.db_probe.executor import ProbeExecutor
-from auto_ontology.utils.embedding import EmbedParams
+from auto_ontology.utils.embedding import EmbedParams, embed_batch_size
 from auto_ontology.utils.llm_invoke import (
     get_llm_client,
     invoke_with_structured_output,
@@ -439,6 +439,7 @@ def _build_retriever(database_name: str) -> Retriever | None:
             model_name=_EMBED_MODEL,
             embed_invoke_url=_EMBED_ENDPOINT,
             api_key=_NVIDIA_API_KEY,
+            inference_batch_size=embed_batch_size(),
         ),
     )
 

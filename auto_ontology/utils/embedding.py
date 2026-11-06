@@ -105,11 +105,17 @@ class EmbedParams:
     request_timeout_s: float = 600.0
 
 
+def embed_batch_size() -> int:
+    """单次请求的文本条数；部分模型端点上限低于默认的 32。"""
+    return max(1, int(os.environ.get("EMBED_BATCH_SIZE", "32")))
+
+
 def get_embed_params() -> EmbedParams:
     return EmbedParams(
         embed_invoke_url=_EMBED_ENDPOINT,
         model_name=_EMBED_MODEL,
         api_key=_EMBED_API_KEY,
+        inference_batch_size=embed_batch_size(),
     )
 
 
@@ -123,6 +129,11 @@ _NO_AUTH = {"Authorization": Omit()}
 
 _clients: dict[tuple[str, str], OpenAI] = {}
 _clients_lock = threading.Lock()
+
+# 各端点的批次上限通常只能通过 400 报错得知；按 (endpoint, model) 记住学到的值，
+# 后续请求直接用更小的批次，不再先发一次注定被拒的请求。
+_BATCH_LIMITS: dict[tuple[str, str], int] = {}
+_BATCH_LIMITS_LOCK = threading.Lock()
 
 
 def _base_url(endpoint: str) -> str:
@@ -162,6 +173,48 @@ def _text_prefix(model_name: str, input_type: InputType) -> str:
     return ""
 
 
+def _is_batch_size_error(exc: Exception) -> bool:
+    """Whether *exc* is the endpoint rejecting the number of texts per request."""
+    return (
+        isinstance(exc, APIStatusError)
+        and exc.status_code == 400
+        and "batch size" in str(exc).lower()
+    )
+
+
+def _batch_limit_key(params: EmbedParams) -> tuple[str, str]:
+    return (_base_url(params.embed_invoke_url), params.model_name)
+
+
+def _effective_batch_size(params: EmbedParams) -> int:
+    """*params*' batch size, capped by whatever this endpoint taught us before."""
+    limit = _BATCH_LIMITS.get(_batch_limit_key(params))
+    if limit is None:
+        return max(1, params.inference_batch_size)
+    return max(1, min(params.inference_batch_size, limit))
+
+
+def _remember_batch_limit(params: EmbedParams, rejected: int) -> int:
+    """Record a smaller limit for this endpoint/model and return it."""
+    key = _batch_limit_key(params)
+    learned = max(1, rejected // 2)
+    with _BATCH_LIMITS_LOCK:
+        current = _BATCH_LIMITS.get(key)
+        new_limit = learned if current is None else min(current, learned)
+        changed = current is None or new_limit < current
+        _BATCH_LIMITS[key] = new_limit
+    if changed:
+        logger.warning(
+            "Embedding endpoint %s (model %s) rejected a batch of %d; "
+            "continuing with batches of at most %d",
+            params.embed_invoke_url,
+            params.model_name,
+            rejected,
+            new_limit,
+        )
+    return new_limit
+
+
 def embed_texts(
     texts: list[str],
     params: EmbedParams,
@@ -188,7 +241,7 @@ def embed_texts(
     client = _client(params)
     if retries is not None:
         client = client.with_options(max_retries=retries)
-    batches = list(itertools.batched(to_send, max(1, params.inference_batch_size)))
+    batches = list(itertools.batched(to_send, _effective_batch_size(params)))
     prefix = _text_prefix(params.model_name, input_type)
 
     def _embed_batch(indices: tuple[int, ...]) -> None:
@@ -201,14 +254,24 @@ def embed_texts(
             if _SEND_NVIDIA_PARAMS
             else None
         )
-        response = client.embeddings.create(
-            model=params.model_name,
-            input=[prefix + stripped[i] for i in indices],
-            encoding_format="float",
-            extra_body=extra_body,
-            timeout=timeout or params.request_timeout_s,
-            extra_headers=None if params.api_key else _NO_AUTH,
-        )
+        try:
+            response = client.embeddings.create(
+                model=params.model_name,
+                input=[prefix + stripped[i] for i in indices],
+                encoding_format="float",
+                extra_body=extra_body,
+                timeout=timeout or params.request_timeout_s,
+                extra_headers=None if params.api_key else _NO_AUTH,
+            )
+        except Exception as exc:
+            # 服务商只会用 400 告诉我们批次太大；拆半重试并记住上限，而不是
+            # 让整个数据库的嵌入失败。单条仍被拒时才是真正不可恢复的错误。
+            if _is_batch_size_error(exc) and len(indices) > 1:
+                smaller = _remember_batch_limit(params, len(indices))
+                for sub in itertools.batched(indices, smaller):
+                    _embed_batch(sub)
+                return
+            raise
         returned = [item.index for item in response.data]
         if sorted(returned) != list(range(len(indices))):
             # Exactly one vector per input. A missing one would leave a row
@@ -283,7 +346,7 @@ def embed_chunk_size(params: EmbedParams) -> int:
     lost to — or redone by — a mid-run failure, larger ones mean less pgvector
     round-tripping.
     """
-    return max(1, params.inference_batch_size * params.nim_http_max_concurrent)
+    return max(1, _effective_batch_size(params) * params.nim_http_max_concurrent)
 
 
 def _embedded_row_count(frame: "pd.DataFrame") -> int:
@@ -389,7 +452,7 @@ def batch_embed_chunks(
         size,
         params.embed_invoke_url,
         params.model_name,
-        params.inference_batch_size,
+        _effective_batch_size(params),
         params.nim_http_max_concurrent,
     )
 

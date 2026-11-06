@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from auto_ontology.utils.embedding import EmbedParams, batch_embed
+from auto_ontology.utils.embedding import EmbedParams, batch_embed, embed_batch_size
 from auto_ontology.utils.model_config import resolve
 from auto_ontology.utils.sample_values import stringify_sample_values
 from auto_ontology.vdb import get_semantic_vdb
@@ -106,6 +106,7 @@ def build_semantic_embedder(
         embed_invoke_url=resolve("EMBED", "ENDPOINT"),
         model_name=resolve("EMBED", "MODEL"),
         api_key=api_key,
+        inference_batch_size=embed_batch_size(),
     )
     vdb = get_semantic_vdb(database_name=database_name, reset=reset)
     return SemanticEmbedder(
