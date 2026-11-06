@@ -63,6 +63,22 @@ type MessageBubbleProps = {
 	message: ChatMessage;
 };
 
+/**
+ * The answer's reasoning summary, collapsed by default. The backend already
+ * carries it on the result event as `thoughts`; rendering it here keeps the
+ * process available after the live thinking bubble unmounts.
+ */
+const ThinkingProcess = ({ thoughts }: { thoughts: string }) => (
+	<details className="mb-3 rounded-lg border border-zinc-200/80 bg-white/70 px-3 py-2 dark:border-zinc-700/80 dark:bg-zinc-900/50">
+		<summary className="cursor-pointer select-none text-xs font-medium text-secondary dark:text-zinc-400">
+			Thinking process
+		</summary>
+		<div className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-secondary dark:text-zinc-400">
+			{thoughts}
+		</div>
+	</details>
+);
+
 /** True when the assistant message embeds a ResultChart fence (illumex Message 2). */
 const hasEmbeddedChart = (content: string): boolean =>
 	/(^|\n)```(?:chart|chart-carousel)\b/.test(content);
@@ -85,6 +101,7 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
 	const showSql = !isUser && Boolean(message.sql) && !showCharts;
 	const showQueryResults = !isUser && !showCharts && Boolean(message.sqlResponse);
 	const showText = Boolean(message.content.trim());
+	const showThoughts = !isUser && Boolean(message.thoughts?.trim());
 
 	// Stretch assistant bubbles that carry SQL / charts / tables to the same
 	// width so Message 2 matches Message 1's SQL block.
@@ -99,6 +116,8 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
 						: 'bg-zinc-100 text-heading dark:bg-zinc-800 dark:text-zinc-100'
 				}`}
 			>
+				{showThoughts && <ThinkingProcess thoughts={message.thoughts!} />}
+
 				{showText && (
 					<FormattedContent
 						content={message.content}
