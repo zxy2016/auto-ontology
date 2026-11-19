@@ -400,9 +400,11 @@ def _pump(slot: _Slot) -> None:
             return
 
         event_type = event.get("type")
+        thoughts = None
         if event_type == "result":
             answer = event.get("answer") or {}
             response = str(answer.get("response") or "")
+            thoughts = answer.get("thoughts") or None
             # An answer the agent gave up on (``unconstructable_sql_response``)
             # carries no SQL, even when a query did run earlier in the turn.
             # Fall back to the last one streamed so the failed query is still
@@ -424,6 +426,7 @@ def _pump(slot: _Slot) -> None:
                     analytics_id=slot.analytics_id,
                     response=response,
                     sql_code=sql_code,
+                    thoughts=thoughts,
                 )
             else:
                 persist_analytics_result(

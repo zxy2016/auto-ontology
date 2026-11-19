@@ -2416,6 +2416,17 @@
                             ],
                             "description": "Serialised result table / chart payload for the bubble."
                           },
+                          "thoughts": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "User-visible summary of the assistant’s steps."
+                          },
                           "created_at": {
                             "type": "string",
                             "format": "date-time"
@@ -2428,6 +2439,7 @@
                           "content",
                           "sql_code",
                           "sql_response",
+                          "thoughts",
                           "created_at"
                         ],
                         "additionalProperties": false
@@ -2693,6 +2705,17 @@
                       ],
                       "description": "Serialised result table / chart payload for the bubble."
                     },
+                    "thoughts": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "User-visible summary of the assistant’s steps."
+                    },
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
@@ -2705,6 +2728,7 @@
                     "content",
                     "sql_code",
                     "sql_response",
+                    "thoughts",
                     "created_at"
                   ],
                   "additionalProperties": false

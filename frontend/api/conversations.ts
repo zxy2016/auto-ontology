@@ -19,6 +19,7 @@ export type ConversationDetail = ConversationSummary & {
 		content: string;
 		sql_code: string | null;
 		sql_response: string | null;
+		thoughts: string | null;
 		created_at: string;
 	}>;
 };
@@ -90,6 +91,7 @@ export function toMessage(msg: ConversationDetail['messages'][number]): ChatMess
 		content: msg.content,
 		sql: msg.sql_code ?? undefined,
 		sqlResponse: msg.sql_response ?? undefined,
+		thoughts: msg.thoughts ?? undefined,
 		timestamp: new Date(msg.created_at).getTime(),
 	};
 }

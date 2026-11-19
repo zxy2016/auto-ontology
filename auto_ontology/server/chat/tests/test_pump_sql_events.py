@@ -136,3 +136,19 @@ def test_no_sql_event_leaves_the_turn_unchanged(
     _run_pump([{"type": "error", "message": "boom"}])
 
     assert persisted[0]["sql_code"] is None
+    assert persisted[0]["thoughts"] is None
+
+
+def test_answer_process_summary_reaches_persistence_and_stream(
+    persisted: list[dict[str, Any]],
+) -> None:
+    thoughts = "- Query agent: Running a query to check the data."
+    event = {
+        "type": "result",
+        "answer": {"response": "There is one order.", "thoughts": thoughts},
+    }
+
+    slot = _run_pump([event])
+
+    assert persisted[0]["thoughts"] == thoughts
+    assert event in slot.buffer

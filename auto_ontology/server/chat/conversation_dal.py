@@ -164,6 +164,7 @@ def persist_assistant_result(
     analytics_id: str,
     response: str,
     sql_code: str | None,
+    thoughts: str | None = None,
 ) -> None:
     """Persist one final assistant turn and complete its analytics row."""
 
@@ -179,10 +180,10 @@ def persist_assistant_result(
             cur.execute(
                 f"""
                 INSERT INTO {FRONTEND_SCHEMA}.messages
-                    (id, conversation_id, role, content, sql_code, created_at)
-                VALUES (%s, %s, 'assistant', %s, %s, NOW())
+                    (id, conversation_id, role, content, sql_code, thoughts, created_at)
+                VALUES (%s, %s, 'assistant', %s, %s, %s, NOW())
                 """,
-                (str(uuid.uuid4()), conversation_str, response, sql_code),
+                (str(uuid.uuid4()), conversation_str, response, sql_code, thoughts),
             )
             cur.execute(
                 f"""

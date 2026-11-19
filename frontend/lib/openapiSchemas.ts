@@ -44,6 +44,7 @@ export const messageSchema = z.object({
 		.string()
 		.nullable()
 		.describe('Serialised result table / chart payload for the bubble.'),
+	thoughts: z.string().nullable().describe('User-visible summary of the assistant’s steps.'),
 	created_at: timestamp(),
 });
 
