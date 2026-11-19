@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Message, Translate } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -25,7 +27,7 @@ import type { Tag, TagItem } from '@/types/tags';
 import { tagItemPath } from './tag-item-path';
 import { TAGS_PANEL_PADDING, TAGS_PATH } from './tags-path';
 
-const TYPE_LABELS: Record<TagItemType, string> = {
+const TYPE_LABELS: Record<TagItemType, Message> = {
 	[TagItemType.Term]: 'Term',
 	[TagItemType.Table]: 'Table',
 	[TagItemType.Column]: 'Column',
@@ -63,6 +65,7 @@ const TYPE_ICONS: Record<TagItemType, IconName> = {
  * app that names a person.
  */
 const TaggedByCell = ({ item }: { item: TagItem }) => {
+	const t = useTranslation();
 	if (item.rule != null) {
 		return (
 			<span className="flex min-w-0 items-center gap-1.5" title={item.rule.name}>
@@ -79,7 +82,7 @@ const TaggedByCell = ({ item }: { item: TagItem }) => {
 
 	const name = item.tagged_by_user?.name || item.tagged_by_user?.email || '';
 	const known = name !== '';
-	const label = known ? name : AUTO_GENERATED_LABEL;
+	const label = known ? name : t(AUTO_GENERATED_LABEL);
 
 	return (
 		<span className="flex min-w-0 items-center gap-2" title={label}>
@@ -94,10 +97,10 @@ const TaggedByCell = ({ item }: { item: TagItem }) => {
 	);
 };
 
-const COLUMNS: TableColumn<TagItem>[] = [
+const tagColumns = (t: Translate): TableColumn<TagItem>[] => [
 	{
 		key: 'name',
-		header: 'Name',
+		header: t('Name'),
 		truncate: true,
 		title: (item) => item.name,
 		cell: (item) => (
@@ -114,15 +117,15 @@ const COLUMNS: TableColumn<TagItem>[] = [
 	},
 	{
 		key: 'type',
-		header: 'Type',
+		header: t('Type'),
 		width: 'w-44',
 		nowrap: true,
 		className: 'text-body dark:text-zinc-400',
-		cell: (item) => TYPE_LABELS[item.type],
+		cell: (item) => t(TYPE_LABELS[item.type]),
 	},
 	{
 		key: 'path',
-		header: 'Location',
+		header: t('Location'),
 		truncate: true,
 		title: (item) => item.path ?? '',
 		className: 'text-body dark:text-zinc-400',
@@ -131,14 +134,14 @@ const COLUMNS: TableColumn<TagItem>[] = [
 	},
 	{
 		key: 'tagged_by',
-		header: 'Tagged By',
+		header: t('Tagged By'),
 		width: 'w-48',
 		nowrap: true,
 		cell: (item) => <TaggedByCell item={item} />,
 	},
 	{
 		key: 'tagged',
-		header: 'Tagged',
+		header: t('Tagged'),
 		width: 'w-32',
 		nowrap: true,
 		className: 'text-secondary dark:text-zinc-400',
@@ -166,6 +169,7 @@ type TagDetailViewProps = {
  * this page is titled with — is one small read that does not wait for them.
  */
 export const TagDetailView = ({ tagId }: TagDetailViewProps) => {
+	const t = useTranslation();
 	const router = useRouter();
 	// No loading flag beside these: the two reads render independently, and a
 	// tag that has not arrived is `tag == null`, which is what the title
@@ -178,7 +182,7 @@ export const TagDetailView = ({ tagId }: TagDetailViewProps) => {
 		tagsApi.getById(tagId).then((response) => {
 			if (cancelled) return;
 			if (response.error) {
-				setError(response.message ?? 'Failed to load tag.');
+				setError(response.message ?? t('Failed to load tag.'));
 				setTag(null);
 			} else {
 				setError(null);
@@ -188,7 +192,7 @@ export const TagDetailView = ({ tagId }: TagDetailViewProps) => {
 		return () => {
 			cancelled = true;
 		};
-	}, [tagId]);
+	}, [tagId, t]);
 
 	const fetchItemsPage = useCallback(
 		async (skip: number, limit: number) => {
@@ -236,9 +240,9 @@ export const TagDetailView = ({ tagId }: TagDetailViewProps) => {
 			<div className={`w-full space-y-5 ${TAGS_PANEL_PADDING}`}>
 				<EmptyState
 					icon={IconName.Tag}
-					title="This tag could not be opened"
+					title={t('This tag could not be opened')}
 					description={error}
-					action={{ label: 'Back to Tags', onClick: () => router.push(TAGS_PATH) }}
+					action={{ label: t('Back to Tags'), onClick: () => router.push(TAGS_PATH) }}
 				/>
 			</div>
 		);
@@ -274,8 +278,10 @@ export const TagDetailView = ({ tagId }: TagDetailViewProps) => {
 							    failed to load has no count rather than a count of
 							    none. */}
 							<span className="ml-auto shrink-0 text-xs text-secondary dark:text-zinc-400">
-								{itemsLoading || itemsError != null ? null : `${total} tagged · `}
-								Created {formatDate(tag.created)}
+								{itemsLoading || itemsError != null
+									? null
+									: t('{1} tagged · ', total)}
+								{t('Created')} {formatDate(tag.created)}
 							</span>
 						</>
 					)}
@@ -288,14 +294,14 @@ export const TagDetailView = ({ tagId }: TagDetailViewProps) => {
 				) : null}
 
 				{itemsLoading ? (
-					<div role="status" aria-label="Loading tagged items">
+					<div role="status" aria-label={t('Loading tagged items')}>
 						<SkeletonTable columns={5} rows={4} />
 					</div>
 				) : null}
 
 				{items.length > 0 ? (
 					<Table
-						columns={COLUMNS}
+						columns={tagColumns(t)}
 						rows={items}
 						rowKey={(item) => `${item.type}:${item.id}`}
 						onRowClick={handleRowClick}
@@ -307,8 +313,10 @@ export const TagDetailView = ({ tagId }: TagDetailViewProps) => {
 					<EmptyState
 						variant={EmptyStateVariant.Inline}
 						icon={IconName.Tag}
-						title="Nothing is tagged with this tag"
-						description="Terms, tables, columns, column attributes and SQL attributes carrying this tag will be listed here."
+						title={t('Nothing is tagged with this tag')}
+						description={t(
+							'Terms, tables, columns, column attributes and SQL attributes carrying this tag will be listed here.',
+						)}
 						className="rounded-lg border border-dashed border-zinc-300/90 bg-white/70 dark:border-zinc-600 dark:bg-zinc-900/30"
 					/>
 				) : null}

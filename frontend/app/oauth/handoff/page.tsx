@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Icon, IconName } from '@/common/icons';
@@ -13,7 +14,9 @@ import { OauthStatus } from '@/app/oauth/OauthStatus';
 // The page is public and takes its target from the query string, so it only
 // ever talks to a loopback listener. Anything else is refused rather than
 // navigated to; the server-side rewrite never sends other URLs here.
-const callbackError = (target: string | null): string | null => {
+import type { Message } from '@/types/i18n';
+
+const callbackError = (target: string | null): Message | null => {
 	if (!target) return 'Missing callback.';
 	try {
 		if (!isLoopbackCallback(new URL(target))) return 'Invalid callback.';
@@ -24,6 +27,7 @@ const callbackError = (target: string | null): string | null => {
 };
 
 const HandoffStatus = () => {
+	const t = useTranslation();
 	const params = useSearchParams();
 	const target = params.get('url');
 	const error = callbackError(target);
@@ -35,12 +39,12 @@ const HandoffStatus = () => {
 	}, [error, target]);
 
 	if (error) {
-		return <p className="text-center text-sm text-red-500">{error}</p>;
+		return <p className="text-center text-sm text-red-500">{t(error)}</p>;
 	}
 
 	return (
-		<OauthStatus title="Thank You">
-			Authentication successful. You can close this page.
+		<OauthStatus title={t('Thank You')}>
+			{t('Authentication successful. You can close this page.')}
 		</OauthStatus>
 	);
 };

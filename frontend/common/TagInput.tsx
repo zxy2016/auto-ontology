@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import {
 	forwardRef,
 	useCallback,
@@ -76,6 +77,7 @@ export const TagInput = forwardRef<TagInputHandle, TagInputProps>(function TagIn
 	},
 	ref,
 ) {
+	const t = useTranslation();
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [draft, setDraft] = useState('');
 
@@ -192,7 +194,7 @@ export const TagInput = forwardRef<TagInputHandle, TagInputProps>(function TagIn
 								ev.stopPropagation();
 								removeAt(idx);
 							}}
-							aria-label={`Remove ${tag}`}
+							aria-label={t('Remove {1}', tag)}
 							className="-mr-1 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-[#3f6b00] transition-colors hover:bg-[#76b900]/25 hover:text-[#2c4d00] dark:text-[#cdeb86] dark:hover:bg-[#76b900]/30"
 						>
 							<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
@@ -219,7 +221,7 @@ export const TagInput = forwardRef<TagInputHandle, TagInputProps>(function TagIn
 				onPaste={handlePaste}
 				onBlur={handleBlur}
 				placeholder={value.length === 0 ? placeholder : ''}
-				aria-label={ariaLabel ?? 'Add tag'}
+				aria-label={ariaLabel ?? t('Add tag')}
 				className="min-w-[6rem] flex-1 border-0 bg-transparent px-1 py-0.5 text-sm text-heading outline-none placeholder:text-secondary disabled:cursor-not-allowed dark:text-zinc-100"
 			/>
 		</div>

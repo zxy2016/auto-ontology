@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState } from 'react';
 import { Button } from '@/common/Button';
 import { Modal } from '@/common/modal';
@@ -27,6 +28,7 @@ type InviteUserModalProps = {
 };
 
 export const InviteUserModal = ({ submitting, error, onClose, onInvite }: InviteUserModalProps) => {
+	const t = useTranslation();
 	const [email, setEmail] = useState('');
 	const [name, setName] = useState('');
 	const [role, setRole] = useState<Role>(Role.Viewer);
@@ -41,15 +43,18 @@ export const InviteUserModal = ({ submitting, error, onClose, onInvite }: Invite
 				}}
 			>
 				<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">
-					Invite user
+					{t('Invite user')}
 				</h2>
 				<p className="text-xs text-secondary dark:text-zinc-400">
-					Creates a one-time link. Copy it and send it yourself — no email is sent. They
-					set their own password on the link.
+					{t(
+						'Creates a one-time link. Copy it and send it yourself — no email is sent. They set their own password on the link.',
+					)}
 				</p>
 
 				<label className="block space-y-1.5" htmlFor="invite-email">
-					<span className="text-xs font-medium text-body dark:text-zinc-300">Email</span>
+					<span className="text-xs font-medium text-body dark:text-zinc-300">
+						{t('Email')}
+					</span>
 					<input
 						id="invite-email"
 						className={inputClass}
@@ -63,7 +68,8 @@ export const InviteUserModal = ({ submitting, error, onClose, onInvite }: Invite
 
 				<label className="block space-y-1.5" htmlFor="invite-name">
 					<span className="text-xs font-medium text-body dark:text-zinc-300">
-						Name <span className="font-normal text-secondary">(optional)</span>
+						{t('Name')}{' '}
+						<span className="font-normal text-secondary">{t('(optional)')}</span>
 					</span>
 					<input
 						id="invite-name"
@@ -76,7 +82,9 @@ export const InviteUserModal = ({ submitting, error, onClose, onInvite }: Invite
 				</label>
 
 				<label className="block space-y-1.5" htmlFor="invite-role">
-					<span className="text-xs font-medium text-body dark:text-zinc-300">Role</span>
+					<span className="text-xs font-medium text-body dark:text-zinc-300">
+						{t('Role')}
+					</span>
 					<select
 						id="invite-role"
 						className={inputClass}
@@ -85,8 +93,8 @@ export const InviteUserModal = ({ submitting, error, onClose, onInvite }: Invite
 							setRole(event.target.value === Role.Admin ? Role.Admin : Role.Viewer)
 						}
 					>
-						<option value={Role.Viewer}>Viewer</option>
-						<option value={Role.Admin}>Admin</option>
+						<option value={Role.Viewer}>{t('Viewer')}</option>
+						<option value={Role.Admin}>{t('Admin')}</option>
 					</select>
 				</label>
 
@@ -99,7 +107,7 @@ export const InviteUserModal = ({ submitting, error, onClose, onInvite }: Invite
 						type="button"
 						onClick={onClose}
 					>
-						Cancel
+						{t('Cancel')}
 					</Button>
 					<Button
 						theme={ButtonTheme.Primary}
@@ -107,7 +115,7 @@ export const InviteUserModal = ({ submitting, error, onClose, onInvite }: Invite
 						type="submit"
 						disabled={submitting}
 					>
-						{submitting ? 'Inviting…' : 'Invite'}
+						{submitting ? t('Inviting…') : t('Invite')}
 					</Button>
 				</div>
 			</form>

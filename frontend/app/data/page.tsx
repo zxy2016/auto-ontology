@@ -2,15 +2,21 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import { getServerTranslation } from '@/lib/i18n/server';
 import { Suspense } from 'react';
 import { SkeletonBlock, SkeletonCard, SkeletonRows } from '@/common/Skeleton';
 import { DataWorkspaceView } from '@/components/dataPage';
 
-export default function DataPage() {
+export default async function DataPage() {
+	const t = await getServerTranslation();
 	return (
 		<Suspense
 			fallback={
-				<div className="flex h-screen" role="status" aria-label="Loading data workspace">
+				<div
+					className="flex h-screen"
+					role="status"
+					aria-label={t('Loading data workspace')}
+				>
 					<aside className="w-72 border-r border-zinc-200 p-4 dark:border-zinc-800">
 						<SkeletonBlock className="mb-5 h-6 w-24" />
 						<SkeletonRows rows={8} />

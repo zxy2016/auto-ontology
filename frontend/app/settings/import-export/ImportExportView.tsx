@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Message } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useState } from 'react';
 import { datasources } from '@/api/datasources';
 import { modelInterchangeApi } from '@/api/modelInterchange';
@@ -22,7 +24,7 @@ import { useSmoothProgress } from '@/lib/useSmoothProgress';
 import type { Database } from '@/types/datasources';
 import type { ImportEntityCounts, ImportSummary } from '@/types/modelInterchange';
 
-const FORMAT_LABEL: Record<ModelFormat, string> = {
+const FORMAT_LABEL: Record<ModelFormat, Message> = {
 	[ModelFormat.AUTO_ONTOLOGY]: 'Native Auto Ontology',
 	[ModelFormat.OSSIE]: 'Apache Ossie',
 };
@@ -35,7 +37,7 @@ const EXPORT_FILENAME: Record<ModelFormat, string> = {
 // The Ossie semantic model, ontology and mapping, which are separate documents.
 const OSSIE_WITH_ONTOLOGY_FILENAME = 'ossie-model.zip';
 
-const FORMAT_OPTIONS: { value: ModelFormat; description: string }[] = [
+const FORMAT_OPTIONS: { value: ModelFormat; description: Message }[] = [
 	{
 		value: ModelFormat.AUTO_ONTOLOGY,
 		description:
@@ -58,8 +60,18 @@ const downloadBlob = (blob: Blob, filename: string) => {
 	URL.revokeObjectURL(url);
 };
 
-const createdCountEntries = (counts: ImportEntityCounts): [string, number][] =>
-	Object.entries(counts).filter(([, value]) => value > 0);
+const IMPORT_ENTITY_LABELS: Record<keyof ImportEntityCounts, Message> = {
+	databases: 'Databases',
+	schemas: 'Schemas',
+	tables: 'Tables',
+	columns: 'Columns',
+	terms: 'Terms',
+	column_attributes: 'Column Attributes',
+	sql_attributes: 'SQL Attributes',
+	custom_analyses: 'Custom Analyses',
+};
+
+const importEntityKeys = Object.keys(IMPORT_ENTITY_LABELS) as (keyof ImportEntityCounts)[];
 
 const checkboxClassName = 'h-4 w-4 rounded border-zinc-300 text-[#76b900] focus:ring-[#76b900]/30';
 
@@ -67,10 +79,8 @@ const radioClassName = 'mt-0.5 h-4 w-4 border-zinc-300 text-[#76b900] focus:ring
 
 const isYamlFile = (file: File): boolean => /\.ya?ml$/i.test(file.name);
 
-const validateYamlFile = (file: File): string | null =>
-	isYamlFile(file) ? null : 'Please choose a .yaml or .yml file.';
-
 export const ImportExportView = () => {
+	const t = useTranslation();
 	const [databases, setDatabases] = useState<Database[]>([]);
 	const [databasesLoading, setDatabasesLoading] = useState(true);
 	const [databasesError, setDatabasesError] = useState<string | null>(null);
@@ -98,7 +108,7 @@ export const ImportExportView = () => {
 			const res = await datasources.getDBs();
 			if (!active) return;
 			if (res.error) {
-				setDatabasesError(res.message ?? 'Failed to load databases.');
+				setDatabasesError(res.message ?? '');
 				setDatabases([]);
 			} else {
 				const data = res.data ?? [];
@@ -151,7 +161,7 @@ export const ImportExportView = () => {
 			);
 			if (res.error) {
 				exportProgress.fail();
-				setExportError(res.message ?? 'Failed to export model.');
+				setExportError(res.message ?? t('Failed to export model.'));
 				return;
 			}
 			await exportProgress.complete();
@@ -161,12 +171,15 @@ export const ImportExportView = () => {
 			);
 			setExportMessage(
 				withOntology
-					? `Model exported as ${FORMAT_LABEL[exportFormat]}, with its ontology and mapping.`
-					: `Model exported as ${FORMAT_LABEL[exportFormat]}.`,
+					? t(
+							'Model exported as {1}, with its ontology and mapping.',
+							t(FORMAT_LABEL[exportFormat]),
+						)
+					: t('Model exported as {1}.', t(FORMAT_LABEL[exportFormat])),
 			);
 		} catch {
 			exportProgress.fail();
-			setExportError('Failed to export model.');
+			setExportError(t('Failed to export model.'));
 		} finally {
 			setExporting(false);
 		}
@@ -197,7 +210,7 @@ export const ImportExportView = () => {
 		setImporting(false);
 
 		if (res.error) {
-			setImportError(res.message ?? 'Failed to import model.');
+			setImportError(res.message ?? t('Failed to import model.'));
 			return;
 		}
 
@@ -209,21 +222,22 @@ export const ImportExportView = () => {
 	return (
 		<div className="mx-auto w-full max-w-2xl space-y-6">
 			<h1 className="text-lg font-semibold text-heading dark:text-zinc-100">
-				Import / Export
+				{t('Import / Export')}
 			</h1>
 
 			<section className="rounded-lg border border-zinc-200 p-5 dark:border-zinc-700">
 				<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">
-					Export Model
+					{t('Export Model')}
 				</h2>
 				<p className="mt-1 text-xs text-secondary">
-					Download the catalog and semantic layer for the selected databases as a YAML
-					file, or as a .zip when the Ossie ontology is included.
+					{t(
+						'Download the catalog and semantic layer for the selected databases as a YAML file, or as a .zip when the Ossie ontology is included.',
+					)}
 				</p>
 
 				<fieldset className="mt-4">
 					<legend className="text-xs font-medium text-heading dark:text-zinc-200">
-						Format
+						{t('Format')}
 					</legend>
 					<div className="mt-2 grid gap-2 sm:grid-cols-2">
 						{FORMAT_OPTIONS.map(({ value, description }) => (
@@ -241,10 +255,10 @@ export const ImportExportView = () => {
 								/>
 								<span>
 									<span className="block text-sm font-medium text-heading dark:text-zinc-100">
-										{FORMAT_LABEL[value]}
+										{t(FORMAT_LABEL[value])}
 									</span>
 									<span className="block text-xs text-secondary">
-										{description}
+										{t(description)}
 									</span>
 								</span>
 							</label>
@@ -256,16 +270,17 @@ export const ImportExportView = () => {
 					<div className="mt-3 flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
 						<div className="flex flex-col">
 							<span className="text-sm font-medium text-heading dark:text-zinc-100">
-								Include Ontology and Mapping
+								{t('Include Ontology and Mapping')}
 							</span>
 							<span className="text-xs text-secondary">
-								Also exports the terms as an Ossie ontology, with a mapping onto the
-								semantic model, as a .zip of three files.
+								{t(
+									'Also exports the terms as an Ossie ontology, with a mapping onto the semantic model, as a .zip of three files.',
+								)}
 							</span>
 						</div>
 						<Toggle
 							checked={includeOntology}
-							aria-label="Include Ontology and Mapping"
+							aria-label={t('Include Ontology and Mapping')}
 							onChange={setIncludeOntology}
 						/>
 					</div>
@@ -275,10 +290,12 @@ export const ImportExportView = () => {
 					<div className="mt-4">
 						<SkeletonRows rows={3} />
 					</div>
-				) : databasesError ? (
-					<p className="mt-4 text-sm text-red-600 dark:text-red-400">{databasesError}</p>
+				) : databasesError !== null ? (
+					<p className="mt-4 text-sm text-red-600 dark:text-red-400">
+						{databasesError || t('Failed to load databases.')}
+					</p>
 				) : databases.length === 0 ? (
-					<p className="mt-4 text-sm text-secondary">No Databases Found.</p>
+					<p className="mt-4 text-sm text-secondary">{t('No Databases Found.')}</p>
 				) : (
 					<div className="mt-4 space-y-2">
 						<label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/80">
@@ -289,7 +306,7 @@ export const ImportExportView = () => {
 								className={checkboxClassName}
 							/>
 							<span className="text-sm font-medium text-heading dark:text-zinc-200">
-								{allSelected ? 'Deselect all' : 'Select all'}
+								{allSelected ? t('Deselect all') : t('Select all')}
 							</span>
 						</label>
 						<div className="max-h-56 overflow-y-auto rounded-md border border-zinc-100 dark:border-zinc-800">
@@ -321,9 +338,12 @@ export const ImportExportView = () => {
 					<ProgressBar
 						value={exportProgress.value}
 						showValue
-						label="Exporting"
+						label={t('Exporting')}
 						className="mt-4"
-						aria-label={`Exporting model, ${Math.round(exportProgress.value)} percent`}
+						aria-label={t(
+							'Exporting model, {1} percent',
+							Math.round(exportProgress.value),
+						)}
 					/>
 				) : null}
 
@@ -340,28 +360,31 @@ export const ImportExportView = () => {
 						iconPosition="left"
 					>
 						<Icon name={IconName.Download} className="h-4 w-4" />
-						{exporting ? 'Exporting…' : 'Export'}
+						{exporting ? t('Exporting…') : t('Export')}
 					</Button>
 				</div>
 			</section>
 
 			<section className="rounded-lg border border-zinc-200 p-5 dark:border-zinc-700">
 				<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">
-					Import Model
+					{t('Import Model')}
 				</h2>
 				<p className="mt-1 text-xs text-secondary">
-					Upload a native Auto Ontology or Apache Ossie model YAML file to write it into
-					the catalog and semantic layer. The format is detected from the file.
+					{t(
+						'Upload a native Auto Ontology or Apache Ossie model YAML file to write it into the catalog and semantic layer. The format is detected from the file.',
+					)}
 				</p>
 
 				<FileUpload
 					value={importFile}
 					onChange={handleImportFileChange}
 					onError={setImportError}
-					validate={validateYamlFile}
+					validate={(file) =>
+						isYamlFile(file) ? null : t('Please choose a .yaml or .yml file.')
+					}
 					accept=".yaml,.yml"
-					description="YAML files (.yaml, .yml)"
-					aria-label="Upload a Auto Ontology or Apache Ossie model YAML file"
+					description={t('YAML files (.yaml, .yml)')}
+					aria-label={t('Upload a Auto Ontology or Apache Ossie model YAML file')}
 					className="mt-4"
 				/>
 
@@ -372,16 +395,17 @@ export const ImportExportView = () => {
 				<div className="mt-4 flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
 					<div className="flex flex-col">
 						<span className="text-sm font-medium text-heading dark:text-zinc-100">
-							Replace Existing Data
+							{t('Replace Existing Data')}
 						</span>
 						<span className="text-xs text-secondary">
-							Deletes semantic-layer data for the imported databases that isn&apos;t
-							in this file.
+							{t(
+								"Deletes semantic-layer data for the imported databases that isn't in this file.",
+							)}
 						</span>
 					</div>
 					<Toggle
 						checked={replace}
-						aria-label="Replace Existing Data"
+						aria-label={t('Replace Existing Data')}
 						onChange={setReplace}
 					/>
 				</div>
@@ -389,15 +413,17 @@ export const ImportExportView = () => {
 				<div className="mt-3 flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
 					<div className="flex flex-col">
 						<span className="text-sm font-medium text-heading dark:text-zinc-100">
-							Regenerate Embeddings
+							{t('Regenerate Embeddings')}
 						</span>
 						<span className="text-xs text-secondary">
-							Embeds newly created nodes and pushes them into the vector databases.
+							{t(
+								'Embeds newly created nodes and pushes them into the vector databases.',
+							)}
 						</span>
 					</div>
 					<Toggle
 						checked={embed}
-						aria-label="Regenerate Embeddings"
+						aria-label={t('Regenerate Embeddings')}
 						onChange={setEmbed}
 					/>
 				</div>
@@ -405,20 +431,30 @@ export const ImportExportView = () => {
 				{importSummary ? (
 					<div className="mt-3 rounded-lg border border-[#76b900]/30 bg-[#76b900]/5 p-3 text-xs text-body dark:text-zinc-300">
 						<p className="font-medium text-heading dark:text-zinc-100">
-							Import Summary
+							{t('Import Summary')}
 						</p>
 						<ul className="mt-1.5 space-y-0.5">
-							<li>Read as {FORMAT_LABEL[importSummary.format]}</li>
-							{createdCountEntries(importSummary.created).map(([key, value]) => (
-								<li key={key}>
-									Created {value} {key.replace(/_/g, ' ')}
-								</li>
-							))}
+							<li>{t('Read as: {1}', t(FORMAT_LABEL[importSummary.format]))}</li>
+							{importEntityKeys
+								.filter((key) => importSummary.created[key] > 0)
+								.map((key) => (
+									<li key={key}>
+										{t(
+											'Created {1}: {2}',
+											t(IMPORT_ENTITY_LABELS[key]),
+											importSummary.created[key],
+										)}
+									</li>
+								))}
 							{importSummary.embeddings ? (
 								<li>
 									{importSummary.embeddings.skipped
-										? 'Embeddings skipped (embed API key not configured).'
-										: `Embedded ${importSummary.embeddings.data_rows} data row(s) and ${importSummary.embeddings.semantic_rows} semantic row(s).`}
+										? t('Embeddings skipped (embed API key not configured).')
+										: t(
+												'Embedded {1} data row(s) and {2} semantic row(s).',
+												importSummary.embeddings.data_rows,
+												importSummary.embeddings.semantic_rows,
+											)}
 								</li>
 							) : null}
 						</ul>
@@ -435,28 +471,30 @@ export const ImportExportView = () => {
 						iconPosition="left"
 					>
 						<Icon name={IconName.Upload} className="h-4 w-4" />
-						Import
+						{t('Import')}
 					</Button>
 				</div>
 			</section>
 
 			<ConfirmModal
 				open={confirmImportOpen}
-				title="Import Model"
+				title={t('Import Model')}
 				message={
 					<>
-						This writes <strong>{importFile?.name}</strong> into the catalog and
-						semantic layer.
+						{t(
+							'This writes {1} into the catalog and semantic layer.',
+							importFile?.name ?? '',
+						)}
 						{replace ? (
-							<>
-								Because <strong>Replace Existing Data </strong> is on,
-								semantic-layer data for the imported databases that isn&apos;t in
-								this file will be deleted. This action cannot be undone.
-							</>
+							<span className="mt-2 block">
+								{t(
+									"“Replace Existing Data” is on. Semantic-layer data for the imported databases that isn't in this file will be deleted. This action cannot be undone.",
+								)}
+							</span>
 						) : null}
 					</>
 				}
-				confirmLabel="Import"
+				confirmLabel={t('Import')}
 				tone="danger"
 				onConfirm={handleConfirmImport}
 				onCancel={handleCancelImport}

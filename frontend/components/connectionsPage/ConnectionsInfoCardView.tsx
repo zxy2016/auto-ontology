@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { ConnectionInfoCard } from '@/components/connectionsPage/ConnectionInfoCard';
 import { EmptyState } from '@/common/EmptyState';
 import { IconName } from '@/common/icons';
@@ -29,6 +30,7 @@ export const ConnectionsInfoCardView = ({
 	onSsoFederationChange,
 	ssoFederationPending = null,
 }: ConnectionsInfoCardViewProps) => {
+	const t = useTranslation();
 	if (loading) {
 		return (
 			<div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -44,7 +46,7 @@ export const ConnectionsInfoCardView = ({
 			<EmptyState
 				variant={EmptyStateVariant.Borderless}
 				icon={IconName.Connection}
-				title="No Results"
+				title={t('No Results')}
 			/>
 		);
 	}

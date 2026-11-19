@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Translate } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/common/Button';
@@ -23,10 +25,10 @@ import type { TableColumn } from '@/types/table';
 const CSV_HEADERS = ['Timestamp', 'User', 'Source', 'Question', 'Reasoning', 'SQL'];
 const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
-const COLUMNS: TableColumn<ConversationAnalytics>[] = [
+const analyticsColumns = (t: Translate): TableColumn<ConversationAnalytics>[] => [
 	{
 		key: 'question_timestamp',
-		header: 'Timestamp',
+		header: t('Timestamp'),
 		width: 'w-44',
 		nowrap: true,
 		className: 'text-body dark:text-zinc-300',
@@ -34,7 +36,7 @@ const COLUMNS: TableColumn<ConversationAnalytics>[] = [
 	},
 	{
 		key: 'user',
-		header: 'User',
+		header: t('User'),
 		width: 'w-40',
 		nowrap: true,
 		truncate: true,
@@ -44,7 +46,7 @@ const COLUMNS: TableColumn<ConversationAnalytics>[] = [
 	},
 	{
 		key: 'source',
-		header: 'Source',
+		header: t('Source'),
 		width: 'w-24',
 		nowrap: true,
 		className: 'text-body dark:text-zinc-300 uppercase',
@@ -53,7 +55,7 @@ const COLUMNS: TableColumn<ConversationAnalytics>[] = [
 	},
 	{
 		key: 'question',
-		header: 'Question',
+		header: t('Question'),
 		truncate: true,
 		className: 'text-body dark:text-zinc-300',
 		cell: (row) => row.question,
@@ -61,7 +63,7 @@ const COLUMNS: TableColumn<ConversationAnalytics>[] = [
 	},
 	{
 		key: 'response',
-		header: 'Reasoning',
+		header: t('Reasoning'),
 		truncate: true,
 		className: 'text-body dark:text-zinc-300',
 		cell: (row) => row.response,
@@ -77,6 +79,7 @@ const COLUMNS: TableColumn<ConversationAnalytics>[] = [
 ];
 
 export const AnalyticsView = () => {
+	const t = useTranslation();
 	const [rows, setRows] = useState<ConversationAnalytics[]>([]);
 	const [total, setTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
@@ -98,7 +101,7 @@ export const AnalyticsView = () => {
 				// The page already on screen is left alone: dropping the total
 				// would collapse the pager to page one and send the request for
 				// it, so a single failed request would cost two.
-				setError(res.message ?? 'Failed to load analytics');
+				setError(res.message ?? t('Failed to load analytics'));
 			} else {
 				setError(null);
 				setRows(res.data ?? []);
@@ -110,7 +113,7 @@ export const AnalyticsView = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [skip, pageSize]);
+	}, [skip, pageSize, t]);
 
 	const downloadRows = (analytics: ConversationAnalytics[]) => {
 		const lines = [
@@ -148,7 +151,7 @@ export const AnalyticsView = () => {
 		const res = await analyticsApi.list();
 		setDownloading(false);
 		if (res.error) {
-			setDownloadError(res.message ?? 'Failed to download analytics');
+			setDownloadError(res.message ?? t('Failed to download analytics'));
 			return;
 		}
 		downloadRows(res.data ?? []);
@@ -159,7 +162,7 @@ export const AnalyticsView = () => {
 			<header className="flex items-center gap-3 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
 				<Icon name={IconName.ChartLine} className="h-5 w-5 text-body dark:text-zinc-300" />
 				<h1 className="text-lg font-semibold tracking-tight text-heading dark:text-zinc-100">
-					Analytics
+					{t('Analytics')}
 				</h1>
 				<div className="ml-auto">
 					<Button
@@ -170,14 +173,14 @@ export const AnalyticsView = () => {
 						disabled={total === 0 || downloading}
 						shadow
 					>
-						{downloading ? 'Preparing download…' : 'Download'}
+						{downloading ? t('Preparing download…') : t('Download')}
 					</Button>
 				</div>
 			</header>
 
 			<div className="flex-1 overflow-y-auto px-6 py-6">
 				{loading && (
-					<div role="status" aria-label="Loading analytics">
+					<div role="status" aria-label={t('Loading analytics')}>
 						<SkeletonTable columns={6} rows={10} />
 					</div>
 				)}
@@ -185,14 +188,16 @@ export const AnalyticsView = () => {
 				{!loading && error == null && total === 0 && (
 					<EmptyState
 						icon={IconName.ChartLine}
-						title="No Analytics Recorded Yet"
-						description="Analytics are captured automatically when you send messages in a conversation."
+						title={t('No Analytics Recorded Yet')}
+						description={t(
+							'Analytics are captured automatically when you send messages in a conversation.',
+						)}
 					/>
 				)}
 
 				{!loading && error == null && rows.length > 0 && (
 					<Table
-						columns={COLUMNS}
+						columns={analyticsColumns(t)}
 						rows={rows}
 						rowKey={(row) => row.id}
 						pagination={pagination}
@@ -203,7 +208,7 @@ export const AnalyticsView = () => {
 			<Toast
 				open={error !== null}
 				message={error ?? ''}
-				title="Couldn't load analytics"
+				title={t("Couldn't load analytics")}
 				variant={ToastVariant.Error}
 				onClose={() => setError(null)}
 			/>
@@ -211,7 +216,7 @@ export const AnalyticsView = () => {
 			<Toast
 				open={downloadError !== null}
 				message={downloadError ?? ''}
-				title="Couldn't download analytics"
+				title={t("Couldn't download analytics")}
 				variant={ToastVariant.Error}
 				onClose={() => setDownloadError(null)}
 			/>

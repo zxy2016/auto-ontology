@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useState } from 'react';
 import NextLink from 'next/link';
 
@@ -44,6 +45,7 @@ type DataDetailsModalProps = {
 
 /** Generic modal for a Table/View's columns, SQL queries, or related Terms. */
 export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProps) => {
+	const t = useTranslation();
 	const [columns, setColumns] = useState<Column[]>([]);
 	const [details, setDetails] = useState<TableExplorationDetails>({
 		queries: [],
@@ -78,7 +80,7 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 			});
 			if (cancelled) return;
 			if (response.error) {
-				setError(response.message ?? 'Failed to load columns');
+				setError(response.message ?? t('Failed to load columns'));
 			} else {
 				setColumns(response.data ?? []);
 				setColumnsTotal(response.total ?? 0);
@@ -90,7 +92,7 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 		return () => {
 			cancelled = true;
 		};
-	}, [target, type, columnsSkip, columnsPageSize]);
+	}, [target, type, columnsSkip, columnsPageSize, t]);
 
 	useEffect(() => {
 		if (target == null || type == null || type === 'columns') return undefined;
@@ -105,7 +107,7 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 			});
 			if (cancelled) return;
 			if (response.error) {
-				setError(response.message ?? 'Failed to load details');
+				setError(response.message ?? t('Failed to load details'));
 			} else {
 				setDetails(response.data);
 			}
@@ -116,14 +118,15 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 		return () => {
 			cancelled = true;
 		};
-	}, [type, target, termsPage.skip, termsPage.pageSize]);
+	}, [type, target, termsPage.skip, termsPage.pageSize, t]);
 
-	const title = type === 'columns' ? 'Columns' : type === 'queries' ? 'SQL Queries' : 'Terms';
+	const title =
+		type === 'columns' ? t('Columns') : type === 'queries' ? t('SQL Queries') : t('Terms');
 
 	const tableColumns: TableColumn<Column>[] = [
 		{
 			key: 'column',
-			header: 'Name',
+			header: t('Name'),
 			cell: (row) => row.column_name,
 			title: (row) => row.column_name,
 			truncate: true,
@@ -139,8 +142,8 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 							`${target.databaseId}|${target.schemaId}|${target.id}|${row.id}`,
 						)}
 						className="flex h-6 w-6 items-center justify-center rounded text-secondary transition-colors hover:bg-zinc-100 hover:text-[#76b900] dark:hover:bg-zinc-700"
-						aria-label={`Open ${row.column_name} in Data`}
-						title={`Open ${row.column_name} in Data`}
+						aria-label={t('Open {1} in Data', row.column_name)}
+						title={t('Open {1} in Data', row.column_name)}
 					>
 						<Icon name={IconName.ExternalLink} className="h-3.5 w-3.5" />
 					</NextLink>
@@ -149,10 +152,10 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 	];
 
 	const termTableColumns: TableColumn<TableExplorationDetails['terms'][number]>[] = [
-		{ key: 'name', header: 'Name', width: 'w-48', cell: (row) => row.name },
+		{ key: 'name', header: t('Name'), width: 'w-48', cell: (row) => row.name },
 		{
 			key: 'description',
-			header: 'Description',
+			header: t('Description'),
 			cell: (row) => row.description || 'No Description',
 			title: (row) => row.description ?? '',
 			truncate: true,
@@ -165,8 +168,8 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 				<NextLink
 					href={`/terms?focus=${encodeURIComponent(row.id)}`}
 					className="flex h-6 w-6 items-center justify-center rounded text-secondary transition-colors hover:bg-zinc-100 hover:text-[#76b900] dark:hover:bg-zinc-700"
-					aria-label={`Open ${row.name} term`}
-					title={`Open ${row.name} term`}
+					aria-label={t('Open {1} term', row.name)}
+					title={t('Open {1} term', row.name)}
 				>
 					<Icon name={IconName.ExternalLink} className="h-3.5 w-3.5" />
 				</NextLink>
@@ -183,20 +186,22 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 					rowKey={(row) => row.id}
 					pagination={columnsPage.pagination}
 					containerClassName="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700"
-					emptyMessage="No Columns"
+					emptyMessage={t('No Columns')}
 				/>
 			);
 		}
 
 		if (type === 'queries') {
 			if (details.queries.length === 0) {
-				return <EmptyState variant={EmptyStateVariant.Inline} title="No SQL Queries" />;
+				return (
+					<EmptyState variant={EmptyStateVariant.Inline} title={t('No SQL Queries')} />
+				);
 			}
 			return (
 				<ul className="space-y-4">
 					{details.queries.map((query, index) => (
 						<li key={query.id || `${index}`}>
-							<SqlBlock sql={query.sql} label={`Query ${index + 1}`} />
+							<SqlBlock sql={query.sql} label={t('Query {1}', index + 1)} />
 						</li>
 					))}
 				</ul>
@@ -210,7 +215,7 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 				rowKey={(row) => row.id}
 				pagination={termsPage.pagination}
 				containerClassName="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700"
-				emptyMessage="No Terms"
+				emptyMessage={t('No Terms')}
 			/>
 		);
 	};
@@ -250,14 +255,14 @@ export const DataDetailsModal = ({ target, type, onClose }: DataDetailsModalProp
 					iconOnly
 					type="button"
 					onClick={onClose}
-					aria-label={`Close ${title}`}
+					aria-label={t('Close {1}', title)}
 				>
 					<Icon name={IconName.Close} className="h-4 w-4" />
 				</Button>
 			</header>
 			<div className="max-h-[70dvh] overflow-y-auto p-5">
 				{loading ? (
-					<div role="status" aria-label={`Loading ${title}`}>
+					<div role="status" aria-label={t('Loading {1}', title)}>
 						{renderSkeleton()}
 					</div>
 				) : error != null ? (

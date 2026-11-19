@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useState } from 'react';
 
 import { termsApi } from '@/api/terms';
@@ -33,6 +34,7 @@ type ColumnAttributesModalProps = {
 
 /** Generic modal listing a Term's attribute Columns. Reusable from any page that has a term id. */
 export const ColumnAttributesModal = ({ term, onClose }: ColumnAttributesModalProps) => {
+	const t = useTranslation();
 	const termId = term?.id ?? null;
 	const [attributes, setAttributes] = useState<ColumnAttribute[]>([]);
 	const [total, setTotal] = useState(0);
@@ -56,7 +58,7 @@ export const ColumnAttributesModal = ({ term, onClose }: ColumnAttributesModalPr
 			});
 			if (cancelled) return;
 			if (response.error) {
-				setError(response.message ?? 'Failed to load attribute columns');
+				setError(response.message ?? t('Failed to load attribute columns'));
 			} else {
 				setAttributes(response.data ?? []);
 				setTotal(response.total ?? 0);
@@ -68,12 +70,12 @@ export const ColumnAttributesModal = ({ term, onClose }: ColumnAttributesModalPr
 		return () => {
 			cancelled = true;
 		};
-	}, [termId, skip, pageSize]);
+	}, [termId, skip, pageSize, t]);
 
 	const columns: TableColumn<ColumnAttribute>[] = [
 		{
 			key: 'name',
-			header: 'Attribute Name',
+			header: t('Attribute Name'),
 			cell: (row) => row.name,
 			title: (row) => row.name,
 			truncate: true,
@@ -81,14 +83,14 @@ export const ColumnAttributesModal = ({ term, onClose }: ColumnAttributesModalPr
 		},
 		{
 			key: 'description',
-			header: 'Description',
+			header: t('Description'),
 			cell: (row) => row.description || '—',
 			title: (row) => row.description ?? '',
 			truncate: true,
 		},
 		{
 			key: 'sample_values',
-			header: 'Sample Values',
+			header: t('Sample Values'),
 			width: 'w-56',
 			cell: (row) => <LabelList values={row.sample_values ?? []} />,
 		},
@@ -103,7 +105,8 @@ export const ColumnAttributesModal = ({ term, onClose }: ColumnAttributesModalPr
 						className="h-5 w-5 shrink-0 text-body dark:text-zinc-300"
 					/>
 					<Text as="h2" variant={TextVariant.Heading}>
-						{term?.name} — Attribute Columns ({total})
+						{term?.name} {t('— Attribute Columns (')}
+						{total})
 					</Text>
 				</div>
 				<Button
@@ -112,14 +115,14 @@ export const ColumnAttributesModal = ({ term, onClose }: ColumnAttributesModalPr
 					iconOnly
 					type="button"
 					onClick={onClose}
-					aria-label="Close attribute columns"
+					aria-label={t('Close attribute columns')}
 				>
 					<Icon name={IconName.Close} className="h-4 w-4" />
 				</Button>
 			</header>
 			<div className="max-h-[70dvh] overflow-y-auto p-5">
 				{loading ? (
-					<div role="status" aria-label="Loading attribute columns">
+					<div role="status" aria-label={t('Loading attribute columns')}>
 						<SkeletonTable columns={columns.length} rows={pageRowCount} />
 					</div>
 				) : error != null ? (
@@ -131,7 +134,7 @@ export const ColumnAttributesModal = ({ term, onClose }: ColumnAttributesModalPr
 						rowKey={(row) => row.id}
 						pagination={pagination}
 						containerClassName="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700"
-						emptyMessage="No Attribute Columns"
+						emptyMessage={t('No Attribute Columns')}
 					/>
 				)}
 			</div>

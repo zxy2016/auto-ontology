@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '@/common/Button';
 import { Size, ButtonTheme } from '@/enums/button';
@@ -69,6 +70,7 @@ export const ModalWithSteps = ({
 	alert = null,
 	className = 'flex w-[650px] max-w-full flex-col',
 }: ModalWithStepsProps) => {
+	const t = useTranslation();
 	const contentRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -89,7 +91,7 @@ export const ModalWithSteps = ({
 					theme={ButtonTheme.Icon}
 					size={Size.SMALL}
 					iconOnly
-					aria-label="Close"
+					aria-label={t('Close')}
 				>
 					<svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
 						<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
@@ -99,7 +101,7 @@ export const ModalWithSteps = ({
 
 			<nav
 				className="flex min-h-[42px] flex-wrap items-center gap-1 px-5 py-2"
-				aria-label="Connection wizard steps"
+				aria-label={t('Connection wizard steps')}
 			>
 				{steps.map((label, index) => {
 					const status = getStepStatus(index, activeStep, disabledSteps);

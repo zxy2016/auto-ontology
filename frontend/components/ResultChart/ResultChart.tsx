@@ -11,6 +11,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { type FC, type MouseEvent, type ReactNode, useId, useMemo, useRef, useState } from 'react';
 import { CHART_WIDTH, chartHeight, plotBox } from './geometry';
 import { seriesColor } from './palette';
@@ -33,6 +34,7 @@ export const ResultChart: FC<{ spec: ChartSpec; truncation?: Truncation | null }
 	spec,
 	truncation = null,
 }) => {
+	const t = useTranslation();
 	const layout = useMemo(() => {
 		const fmt = spec.y?.format ?? 'number';
 		const colors = spec.series.map((s, i) => seriesColor(s.color, i));
@@ -76,7 +78,7 @@ export const ResultChart: FC<{ spec: ChartSpec; truncation?: Truncation | null }
 		<figure
 			ref={wrapRef}
 			className="result-chart"
-			aria-label={`${spec.type} chart: ${spec.title}`}
+			aria-label={t('{1} chart: {2}', spec.type, spec.title)}
 		>
 			<ChartToolbar
 				spec={spec}
@@ -103,7 +105,7 @@ export const ResultChart: FC<{ spec: ChartSpec; truncation?: Truncation | null }
 				viewBox={`0 0 ${CHART_WIDTH} ${layout.height}`}
 				preserveAspectRatio="xMidYMid meet"
 				role="img"
-				aria-label={`${spec.type} chart: ${spec.title}`}
+				aria-label={t('{1} chart: {2}', spec.type, spec.title)}
 				className="result-chart-svg"
 			>
 				<defs>
@@ -127,7 +129,7 @@ export const ResultChart: FC<{ spec: ChartSpec; truncation?: Truncation | null }
 			</svg>
 			{truncation && (
 				<p className="result-chart-note">
-					Showing top {truncation.shown} of {truncation.total}
+					{t('Showing {1} of {2}', truncation.shown, truncation.total)}
 				</p>
 			)}
 			{dataOpen && <ChartDataTable spec={spec} id={dataId} />}

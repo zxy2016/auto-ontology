@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Message } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Button } from '@/common/Button';
 import { Size, ButtonTheme } from '@/enums/button';
 import { EmptyState } from '@/common/EmptyState';
@@ -31,7 +33,7 @@ const TYPE_ICON: Record<ExpansionEntityKind, IconName> = {
 	connection: IconName.Connection,
 };
 
-const TYPE_LABEL: Record<ExpansionEntityKind, string> = {
+const TYPE_LABEL: Record<ExpansionEntityKind, Message> = {
 	schema: 'Schema',
 	column: 'Column',
 	term: 'Term',
@@ -80,7 +82,7 @@ const displayId = (node: ExpansionEntity): string => {
 // entity (it names *two* terms, not one) — see the button's own guard
 // below, which skips rendering it entirely for that kind instead of
 // reading this map.
-const TYPE_VIEW_LABEL: Record<Exclude<ExpansionEntityKind, 'connection'>, string> = {
+const TYPE_VIEW_LABEL: Record<Exclude<ExpansionEntityKind, 'connection'>, Message> = {
 	schema: 'View in Data',
 	column: 'View in Data',
 	term: 'View Term',
@@ -147,10 +149,11 @@ const PathChain = ({ hops }: { hops: ExplorationLinkPathHopDto[] }) => {
  * comment) case where they genuinely share no traceable path.
  */
 const ConnectionDetails = ({ hops }: { hops: ExplorationLinkPathHopDto[] | null | undefined }) => {
+	const t = useTranslation();
 	if (hops == null) {
 		return (
 			<Text as="p" variant={TextVariant.Caption}>
-				Loading connection…
+				{t('Loading connection…')}
 			</Text>
 		);
 	}
@@ -159,15 +162,15 @@ const ConnectionDetails = ({ hops }: { hops: ExplorationLinkPathHopDto[] | null 
 			<EmptyState
 				variant={EmptyStateVariant.Inline}
 				icon={IconName.Link}
-				title="No Connection Found"
-				description="These terms no longer share a common table."
+				title={t('No Connection Found')}
+				description={t('These terms no longer share a common table.')}
 			/>
 		);
 	}
 	return (
 		<div className="flex flex-col gap-1.5">
 			<Text as="p" variant={TextVariant.Caption}>
-				Details
+				{t('Details')}
 			</Text>
 			<PathChain hops={hops} />
 		</div>
@@ -198,88 +201,95 @@ type ActiveExpansionCardProps = {
  * instead of a single row for the raw composite `id`, and skips the "View"
  * button entirely since it doesn't name a single entity to view.
  */
-export const ActiveExpansionCard = ({ node, onClose, onView }: ActiveExpansionCardProps) => (
-	<section className="absolute right-4 top-20 bottom-28 z-20 flex w-[380px] flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
-		<header className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-700">
-			<p className="text-xs font-semibold text-body dark:text-zinc-300">
-				Showing info on this {TYPE_LABEL[node.kind]}
-			</p>
-			<Button
-				theme={ButtonTheme.IconNeutral}
-				size={Size.SMALL}
-				iconOnly
-				type="button"
-				onClick={onClose}
-				aria-label={`Close ${TYPE_LABEL[node.kind].toLowerCase()} details`}
-			>
-				<Icon name={IconName.Close} className="h-4 w-4" />
-			</Button>
-		</header>
-		<div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-			<div className="flex items-start gap-2">
-				<Icon
-					name={TYPE_ICON[node.kind]}
-					className={`mt-0.5 h-5 w-5 shrink-0 ${TYPE_ICON_COLOR[node.kind]}`}
-				/>
-				<div className="min-w-0 flex-1 space-y-1">
-					<Text as="h2" text={node.name} variant={TextVariant.Heading} />
-					<Text as="p" variant={TextVariant.Caption}>
-						{TYPE_LABEL[node.kind]}
-					</Text>
-				</div>
-			</div>
-			{node.kind !== 'connection' && (
-				<div className="self-start">
-					<Button
-						theme={ButtonTheme.Primary}
-						size={Size.SMALL}
-						type="button"
-						onClick={onView}
-					>
-						{TYPE_VIEW_LABEL[node.kind]}
-					</Button>
-				</div>
-			)}
-			<div className="flex flex-col gap-2">
-				<PropertyRow label="Name" value={node.name} />
-				{node.kind === 'column' && node.dataType != null && (
-					<PropertyRow label="Data Type" value={node.dataType} monospace />
-				)}
-				{node.kind === 'columnAttribute' && node.relationshipType != null && (
-					<PropertyRow label="Relationship" value={node.relationshipType} monospace />
-				)}
-				{node.kind === 'sql' ? (
-					<SqlBlock sql={node.sqlText ?? ''} />
-				) : node.kind === 'connection' ? (
-					<ConnectionDetails hops={node.connectionHops} />
-				) : (
-					<PropertyRow
-						label="Description"
-						value={
-							node.description ??
-							(node.kind === 'column'
-								? 'No description on record for this column.'
-								: '')
-						}
+export const ActiveExpansionCard = ({ node, onClose, onView }: ActiveExpansionCardProps) => {
+	const t = useTranslation();
+	return (
+		<section className="absolute right-4 top-20 bottom-28 z-20 flex w-[380px] flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+			<header className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-700">
+				<p className="text-xs font-semibold text-body dark:text-zinc-300">
+					{t('Showing info on this {1}', t(TYPE_LABEL[node.kind]))}
+				</p>
+				<Button
+					theme={ButtonTheme.IconNeutral}
+					size={Size.SMALL}
+					iconOnly
+					type="button"
+					onClick={onClose}
+					aria-label={t('Close {1} details', t(TYPE_LABEL[node.kind]).toLowerCase())}
+				>
+					<Icon name={IconName.Close} className="h-4 w-4" />
+				</Button>
+			</header>
+			<div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+				<div className="flex items-start gap-2">
+					<Icon
+						name={TYPE_ICON[node.kind]}
+						className={`mt-0.5 h-5 w-5 shrink-0 ${TYPE_ICON_COLOR[node.kind]}`}
 					/>
+					<div className="min-w-0 flex-1 space-y-1">
+						<Text as="h2" text={node.name} variant={TextVariant.Heading} />
+						<Text as="p" variant={TextVariant.Caption}>
+							{t(TYPE_LABEL[node.kind])}
+						</Text>
+					</div>
+				</div>
+				{node.kind !== 'connection' && (
+					<div className="self-start">
+						<Button
+							theme={ButtonTheme.Primary}
+							size={Size.SMALL}
+							type="button"
+							onClick={onView}
+						>
+							{t(TYPE_VIEW_LABEL[node.kind])}
+						</Button>
+					</div>
 				)}
-				{node.kind === 'connection' ? (
-					<>
+				<div className="flex flex-col gap-2">
+					<PropertyRow label={t('Name')} value={node.name} />
+					{node.kind === 'column' && node.dataType != null && (
+						<PropertyRow label={t('Data Type')} value={node.dataType} monospace />
+					)}
+					{node.kind === 'columnAttribute' && node.relationshipType != null && (
 						<PropertyRow
-							label={node.connectionSource?.name ?? 'Term 1'}
-							value={node.connectionSource?.id ?? node.id}
+							label={t('Relationship')}
+							value={node.relationshipType}
 							monospace
 						/>
+					)}
+					{node.kind === 'sql' ? (
+						<SqlBlock sql={node.sqlText ?? ''} />
+					) : node.kind === 'connection' ? (
+						<ConnectionDetails hops={node.connectionHops} />
+					) : (
 						<PropertyRow
-							label={node.connectionTarget?.name ?? 'Term 2'}
-							value={node.connectionTarget?.id ?? node.id}
-							monospace
+							label={t('Description')}
+							value={
+								node.description ??
+								(node.kind === 'column'
+									? t('No description on record for this column.')
+									: '')
+							}
 						/>
-					</>
-				) : (
-					<PropertyRow label="ID" value={displayId(node)} monospace />
-				)}
+					)}
+					{node.kind === 'connection' ? (
+						<>
+							<PropertyRow
+								label={node.connectionSource?.name ?? t('Term 1')}
+								value={node.connectionSource?.id ?? node.id}
+								monospace
+							/>
+							<PropertyRow
+								label={node.connectionTarget?.name ?? t('Term 2')}
+								value={node.connectionTarget?.id ?? node.id}
+								monospace
+							/>
+						</>
+					) : (
+						<PropertyRow label="ID" value={displayId(node)} monospace />
+					)}
+				</div>
 			</div>
-		</div>
-	</section>
-);
+		</section>
+	);
+};

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { IconName } from '@/common/icons';
+import type { Message } from '@/types/i18n';
 import { SearchObjectType } from '@/enums/search';
 import type { GlobalSearchItem } from '@/types/search';
 
@@ -49,7 +50,7 @@ export const searchObjectTypeFromHit = (
 	return item.type;
 };
 
-export const SEARCH_TYPE_LABEL: Record<SearchObjectType, string> = {
+export const SEARCH_TYPE_LABEL: Record<SearchObjectType, Message> = {
 	[SearchObjectType.Term]: 'Term',
 	[SearchObjectType.Attribute]: 'Column Attribute',
 	[SearchObjectType.SqlAttribute]: 'SQL Attribute',
@@ -63,7 +64,7 @@ export const SEARCH_TYPE_LABEL: Record<SearchObjectType, string> = {
 	[SearchObjectType.Tag]: 'Tag',
 };
 
-export const SEARCH_TYPE_TAB_LABEL: Record<SearchObjectType, string> = {
+export const SEARCH_TYPE_TAB_LABEL: Record<SearchObjectType, Message> = {
 	[SearchObjectType.Term]: 'Terms',
 	[SearchObjectType.Attribute]: 'Column Attributes',
 	[SearchObjectType.SqlAttribute]: 'SQL Attributes',

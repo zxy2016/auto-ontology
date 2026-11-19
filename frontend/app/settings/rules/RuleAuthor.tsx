@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { AUTO_GENERATED_LABEL } from '@/constants/tags';
 import type { TagAuthor } from '@/types/tags';
 
@@ -23,7 +24,8 @@ import type { TagAuthor } from '@/types/tags';
  */
 export const RuleAuthor = ({ author }: { author?: TagAuthor | null }) => {
 	const name = author?.name || author?.email || '';
-	const label = name || AUTO_GENERATED_LABEL;
+	const t = useTranslation();
+	const label = name || t(AUTO_GENERATED_LABEL);
 
 	return (
 		<span className="flex min-w-0 items-center gap-2">

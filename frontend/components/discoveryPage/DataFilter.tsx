@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { datasources } from '@/api/datasources';
@@ -83,6 +84,7 @@ const toDataIds = (databases: Database[], selection: Set<string>): string[] => {
  * picker goes on offering every kind, and the tabs report what was found.
  */
 export const DataFilter = ({ selected, onChange }: DataFilterProps) => {
+	const t = useTranslation();
 	const [databases, setDatabases] = useState<Database[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [failed, setFailed] = useState(false);
@@ -131,14 +133,15 @@ export const DataFilter = ({ selected, onChange }: DataFilterProps) => {
 	// count here is of databases and schemas mixed, stored at whichever level
 	// describes the selection, so "Selected (2)" could mean two schemas or two
 	// whole databases.
-	const summary = selected === null ? 'All' : selected.length === 0 ? 'None' : 'Filtered';
+	const summary =
+		selected === null ? t('All') : selected.length === 0 ? t('None') : t('Filtered');
 
 	const emptyMessage = failed
-		? 'Could not load databases'
+		? t('Could not load databases')
 		: loading
-			? 'Loading databases…'
+			? t('Loading databases…')
 			: databases.length === 0
-				? 'No databases are connected'
+				? t('No databases are connected')
 				: null;
 
 	return (
@@ -154,7 +157,7 @@ export const DataFilter = ({ selected, onChange }: DataFilterProps) => {
 					theme={SelectButtonTheme.SelectField}
 					onClick={togglePanel}
 					aria-expanded={open}
-					aria-label="Filter by database or schema"
+					aria-label={t('Filter by database or schema')}
 				>
 					<span className="truncate">{summary}</span>
 					<Icon
@@ -168,7 +171,7 @@ export const DataFilter = ({ selected, onChange }: DataFilterProps) => {
 				<div className="flex flex-col">
 					<div className="flex items-center justify-between gap-2 px-2 py-1">
 						<span className="text-xs font-medium text-secondary dark:text-zinc-400">
-							Filter By
+							{t('Filter By')}
 						</span>
 						<Button
 							theme={ButtonTheme.Minimal}
@@ -177,7 +180,7 @@ export const DataFilter = ({ selected, onChange }: DataFilterProps) => {
 							onClick={() => onChange(selected === null ? [] : null)}
 							disabled={emptyMessage !== null}
 						>
-							{selected === null ? 'Deselect All' : 'Select All'}
+							{selected === null ? t('Deselect All') : t('Select All')}
 						</Button>
 					</div>
 					{emptyMessage !== null ? (

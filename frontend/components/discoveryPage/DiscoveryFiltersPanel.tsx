@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Message, Translate } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
@@ -65,14 +67,14 @@ export const discoveryFiltersMatchNothing = (filters: DiscoveryFilters): boolean
  * with everything ticked there is nothing left to select, and with nothing
  * ticked nothing left to clear.
  */
-const bulkActionLabel = (allSelected: boolean): string =>
+const bulkActionLabel = (allSelected: boolean): Message =>
 	allSelected ? 'Deselect All' : 'Select All';
 
 /** What the closed select field says about a selection. */
-const selectionSummary = (selected: string[] | null): string => {
-	if (selected === null) return 'All';
-	if (selected.length === 0) return 'None';
-	return `Selected (${selected.length})`;
+const selectionSummary = (selected: string[] | null, t: Translate): string => {
+	if (selected === null) return t('All');
+	if (selected.length === 0) return t('None');
+	return t('Selected ({1})', selected.length);
 };
 
 /**
@@ -135,6 +137,7 @@ const ObjectsFilter = ({
 	selected: SearchObjectType[] | null;
 	onChange: (selected: SearchObjectType[] | null) => void;
 }) => {
+	const t = useTranslation();
 	const effective = selected ?? SEARCH_TYPE_TAB_ORDER;
 	const allSelected = selected === null;
 
@@ -159,9 +162,9 @@ const ObjectsFilter = ({
 					theme={SelectButtonTheme.SelectField}
 					onClick={toggle}
 					aria-expanded={open}
-					aria-label="Filter by object type"
+					aria-label={t('Filter by object type')}
 				>
-					<span className="truncate">{selectionSummary(selected)}</span>
+					<span className="truncate">{selectionSummary(selected, t)}</span>
 					<Icon
 						name={IconName.ChevronRight}
 						className="h-4 w-4 shrink-0 rotate-90 text-secondary dark:text-zinc-400"
@@ -173,7 +176,7 @@ const ObjectsFilter = ({
 				<div className="flex flex-col">
 					<div className="flex items-center justify-between gap-2 px-2 py-1">
 						<span className="text-xs font-medium text-secondary dark:text-zinc-400">
-							Filter By
+							{t('Filter By')}
 						</span>
 						<Button
 							theme={ButtonTheme.Minimal}
@@ -181,7 +184,7 @@ const ObjectsFilter = ({
 							type="button"
 							onClick={() => onChange(allSelected ? [] : null)}
 						>
-							{bulkActionLabel(allSelected)}
+							{t(bulkActionLabel(allSelected))}
 						</Button>
 					</div>
 					{SEARCH_TYPE_TAB_ORDER.map((type) => {
@@ -201,7 +204,7 @@ const ObjectsFilter = ({
 									name={SEARCH_TYPE_ICON[type]}
 									className="h-4 w-4 shrink-0 text-secondary dark:text-zinc-400"
 								/>
-								<span className="truncate">{SEARCH_TYPE_TAB_LABEL[type]}</span>
+								<span className="truncate">{t(SEARCH_TYPE_TAB_LABEL[type])}</span>
 							</label>
 						);
 					})}
@@ -253,6 +256,7 @@ const TagsFilter = ({
 	selected: string[] | null;
 	onChange: (selected: string[] | null) => void;
 }) => {
+	const t = useTranslation();
 	const [search, setSearch] = useState('');
 	// The vocabulary the rest of the app already holds — the layout prefetches
 	// it, so this panel usually opens on the tags rather than on "Loading".
@@ -272,13 +276,13 @@ const TagsFilter = ({
 	// worth naming, and neither is "no tag matches this search".
 	const emptyMessage =
 		error !== null
-			? 'Could not load tags'
+			? t('Could not load tags')
 			: isPending
-				? 'Loading tags…'
+				? t('Loading tags…')
 				: options.length === 0
-					? 'No tags exist yet'
+					? t('No tags exist yet')
 					: matches.length === 0 && !untaggedMatches
-						? 'No tag matches this search'
+						? t('No tag matches this search')
 						: null;
 
 	// Every option there is, in the order they are listed. Built from the
@@ -300,7 +304,7 @@ const TagsFilter = ({
 	// Named by count rather than by name: tag names run to 25 characters and
 	// the field is one column of a narrow panel, so a single name would be
 	// truncated to nothing recognisable and two would not fit at all.
-	const summary = selectionSummary(selected);
+	const summary = selectionSummary(selected, t);
 
 	return (
 		<Popover
@@ -312,7 +316,7 @@ const TagsFilter = ({
 					theme={SelectButtonTheme.SelectField}
 					onClick={togglePanel}
 					aria-expanded={open}
-					aria-label="Filter by tag"
+					aria-label={t('Filter by tag')}
 				>
 					<span className="truncate">{summary}</span>
 					<Icon
@@ -326,7 +330,7 @@ const TagsFilter = ({
 				<div className="flex flex-col">
 					<div className="flex items-center justify-between gap-2 px-2 py-1">
 						<span className="text-xs font-medium text-secondary dark:text-zinc-400">
-							Filter By
+							{t('Filter By')}
 						</span>
 						<Button
 							theme={ButtonTheme.Minimal}
@@ -335,22 +339,22 @@ const TagsFilter = ({
 							onClick={() => onChange(allSelected ? [] : null)}
 							disabled={!ready}
 						>
-							{bulkActionLabel(allSelected)}
+							{t(bulkActionLabel(allSelected))}
 						</Button>
 					</div>
 					<div className="px-1 pb-1">
 						<SearchInput
 							value={search}
 							onChange={setSearch}
-							placeholder="Search tags…"
-							aria-label="Search tags"
+							placeholder={t('Search tags…')}
+							aria-label={t('Search tags')}
 							className="h-8 w-full"
 						/>
 					</div>
 					<div className="max-h-56 overflow-y-auto [scrollbar-gutter:stable]">
 						{untaggedMatches && (
 							<TagOption
-								label="(Blanks)"
+								label={t('(Blanks)')}
 								checked={effective.includes(UNTAGGED_TAG_FILTER)}
 								onToggle={() => toggle(UNTAGGED_TAG_FILTER)}
 							/>
@@ -392,6 +396,7 @@ export const DiscoveryFiltersPanel = ({
 	onChange,
 	onReset,
 }: DiscoveryFiltersPanelProps) => {
+	const t = useTranslation();
 	const changedCount = changedDiscoveryFilterCount(filters);
 
 	return (
@@ -399,7 +404,7 @@ export const DiscoveryFiltersPanel = ({
 			<div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
 				<span className="flex items-center gap-1.5">
 					<span className="text-base font-semibold text-heading dark:text-zinc-100">
-						Filters
+						{t('Filters')}
 					</span>
 					<Icon name={IconName.Filter} className="h-4 w-4 text-body dark:text-zinc-300" />
 				</span>
@@ -410,14 +415,14 @@ export const DiscoveryFiltersPanel = ({
 						type="button"
 						onClick={onReset}
 					>
-						Reset All ({changedCount})
+						{t('Reset All ({1})', changedCount)}
 					</Button>
 				)}
 			</div>
 			<div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto py-3">
 				<FilterRow
 					icon={IconName.Exploration}
-					title="Objects"
+					title={t('Objects')}
 					changed={filters.objects !== null}
 				>
 					<ObjectsFilter
@@ -425,13 +430,13 @@ export const DiscoveryFiltersPanel = ({
 						onChange={(objects) => onChange({ ...filters, objects })}
 					/>
 				</FilterRow>
-				<FilterRow icon={IconName.Tag} title="Tags" changed={filters.tags !== null}>
+				<FilterRow icon={IconName.Tag} title={t('Tags')} changed={filters.tags !== null}>
 					<TagsFilter
 						selected={filters.tags}
 						onChange={(tags) => onChange({ ...filters, tags })}
 					/>
 				</FilterRow>
-				<FilterRow icon={IconName.Table} title="Data" changed={filters.data !== null}>
+				<FilterRow icon={IconName.Table} title={t('Data')} changed={filters.data !== null}>
 					<DataFilter
 						selected={filters.data}
 						onChange={(data) => onChange({ ...filters, data })}
@@ -439,13 +444,13 @@ export const DiscoveryFiltersPanel = ({
 				</FilterRow>
 				<FilterRow
 					icon={IconName.Pencil}
-					title="Search In Description"
+					title={t('Search In Description')}
 					changed={filters.description !== DEFAULT_DISCOVERY_FILTERS.description}
 				>
 					<Toggle
 						checked={filters.description}
 						onChange={(description) => onChange({ ...filters, description })}
-						aria-label="Search in description"
+						aria-label={t('Search in description')}
 					/>
 				</FilterRow>
 			</div>

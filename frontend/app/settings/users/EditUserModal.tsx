@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState } from 'react';
 import { Button } from '@/common/Button';
 import { Modal } from '@/common/modal';
@@ -31,6 +32,7 @@ export const EditUserModal = ({
 	onClose,
 	onEdit,
 }: EditUserModalProps) => {
+	const t = useTranslation();
 	const [name, setName] = useState(user.name);
 	const [role, setRole] = useState<Role>(user.role);
 
@@ -43,11 +45,15 @@ export const EditUserModal = ({
 					onEdit({ name: name.trim(), role });
 				}}
 			>
-				<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">Edit user</h2>
+				<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">
+					{t('Edit user')}
+				</h2>
 				<p className="text-xs text-secondary dark:text-zinc-400">{user.email}</p>
 
 				<label className="block space-y-1.5" htmlFor="edit-user-name">
-					<span className="text-xs font-medium text-body dark:text-zinc-300">Name</span>
+					<span className="text-xs font-medium text-body dark:text-zinc-300">
+						{t('Name')}
+					</span>
 					<input
 						id="edit-user-name"
 						className={inputClass}
@@ -60,7 +66,9 @@ export const EditUserModal = ({
 				</label>
 
 				<label className="block space-y-1.5" htmlFor="edit-user-role">
-					<span className="text-xs font-medium text-body dark:text-zinc-300">Role</span>
+					<span className="text-xs font-medium text-body dark:text-zinc-300">
+						{t('Role')}
+					</span>
 					<select
 						id="edit-user-role"
 						className={inputClass}
@@ -70,8 +78,8 @@ export const EditUserModal = ({
 							setRole(event.target.value === Role.Admin ? Role.Admin : Role.Viewer)
 						}
 					>
-						<option value={Role.Viewer}>Viewer</option>
-						<option value={Role.Admin}>Admin</option>
+						<option value={Role.Viewer}>{t('Viewer')}</option>
+						<option value={Role.Admin}>{t('Admin')}</option>
 					</select>
 				</label>
 
@@ -88,7 +96,7 @@ export const EditUserModal = ({
 						disabled={submitting}
 						onClick={onClose}
 					>
-						Cancel
+						{t('Cancel')}
 					</Button>
 					<Button
 						theme={ButtonTheme.Primary}
@@ -96,7 +104,7 @@ export const EditUserModal = ({
 						type="submit"
 						disabled={submitting || !name.trim()}
 					>
-						{submitting ? 'Saving…' : 'Save'}
+						{submitting ? t('Saving…') : t('Save')}
 					</Button>
 				</div>
 			</form>

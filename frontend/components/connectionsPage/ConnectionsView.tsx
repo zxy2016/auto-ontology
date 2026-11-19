@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Placeholders } from '@/assets/images/placeholders';
@@ -26,6 +27,7 @@ import {
 import type { Connection } from '@/types/connection';
 
 export const ConnectionsView = () => {
+	const t = useTranslation();
 	const queryClient = useQueryClient();
 
 	// Prefetched by the root layout, so the cards are usually drawn on the
@@ -96,7 +98,7 @@ export const ConnectionsView = () => {
 						: c,
 				),
 			);
-			setSsoError(res.message ?? 'Failed to update connection.');
+			setSsoError(res.message ?? t('Failed to update connection.'));
 		}
 	};
 
@@ -119,7 +121,7 @@ export const ConnectionsView = () => {
 		setDeleting(false);
 
 		if (res.error) {
-			setDeleteError(res.message ?? 'Failed to delete connection.');
+			setDeleteError(res.message ?? t('Failed to delete connection.'));
 			return;
 		}
 
@@ -150,7 +152,7 @@ export const ConnectionsView = () => {
 						void refetch();
 					}}
 				>
-					Retry
+					{t('Retry')}
 				</Button>
 			</div>
 		);
@@ -162,9 +164,9 @@ export const ConnectionsView = () => {
 				<EmptyState
 					variant={EmptyStateVariant.Borderless}
 					illustration={<Placeholders.NoConnections />}
-					title="No Connections Created Yet"
+					title={t('No Connections Created Yet')}
 					action={{
-						label: 'Create New Connection',
+						label: t('Create New Connection'),
 						icon: IconName.Database,
 						onClick: handleCreateConnection,
 					}}
@@ -181,7 +183,7 @@ export const ConnectionsView = () => {
 							shadow
 						>
 							<Icon name={IconName.Database} className="h-4 w-4" />
-							Create New Connection
+							{t('Create New Connection')}
 						</Button>
 					</div>
 					<ConnectionsInfoCardView
@@ -198,17 +200,16 @@ export const ConnectionsView = () => {
 
 			<ConfirmModal
 				open={deletingConnection !== null}
-				title="Remove Connection"
+				title={t('Remove Connection')}
 				message={
-					deletingConnection ? (
-						<>
-							Are you sure you want to remove <strong>{deletingConnection}</strong>?
-							The connection goes away immediately; its ingested data is cleaned up in
-							the background. This action cannot be undone.
-						</>
-					) : null
+					deletingConnection
+						? t(
+								'Are you sure you want to remove “{1}”? The connection goes away immediately; its ingested data is cleaned up in the background. This action cannot be undone.',
+								deletingConnection,
+							)
+						: null
 				}
-				confirmLabel="Remove"
+				confirmLabel={t('Remove')}
 				onConfirm={handleDeleteConfirm}
 				onCancel={handleDeleteClose}
 				confirming={deleting}

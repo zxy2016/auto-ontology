@@ -4,21 +4,27 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { EmptyState } from '@/common/EmptyState';
 import { Icon, IconName } from '@/common/icons';
 import { EmptyStateVariant } from '@/enums/emptyState';
 
 // Blocks the chat conversation area when the semantic layer hasn't been
 // calculated yet: the agent can't answer questions without it.
-export const SemanticNotReady = () => (
-	<EmptyState
-		variant={EmptyStateVariant.Welcome}
-		illustration={
-			<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#76b900]/15">
-				<Icon name={IconName.NvidiaLogo} className="h-6 w-6 text-[#76b900]" />
-			</div>
-		}
-		title="Semantic Layer Not Ready"
-		description="The semantic layer hasn't been created yet, so I can't answer questions."
-	/>
-);
+export const SemanticNotReady = () => {
+	const t = useTranslation();
+	return (
+		<EmptyState
+			variant={EmptyStateVariant.Welcome}
+			illustration={
+				<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#76b900]/15">
+					<Icon name={IconName.NvidiaLogo} className="h-6 w-6 text-[#76b900]" />
+				</div>
+			}
+			title={t('Semantic Layer Not Ready')}
+			description={t(
+				"The semantic layer hasn't been created yet, so I can't answer questions.",
+			)}
+		/>
+	);
+};

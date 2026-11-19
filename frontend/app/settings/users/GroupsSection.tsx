@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { groupsApi } from '@/api/groups';
@@ -81,6 +82,7 @@ type GroupsSectionProps = {
 };
 
 export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSectionProps) => {
+	const t = useTranslation();
 	const queryClient = useQueryClient();
 	const [groups, setGroups] = useState<Group[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -92,19 +94,22 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 	const [deleting, setDeleting] = useState(false);
 	const [deleteError, setDeleteError] = useState<string | null>(null);
 
-	const load = useCallback(async (isCurrent: () => boolean = () => true) => {
-		setLoading(true);
-		const result = await groupsApi.getAll();
-		if (!isCurrent()) return;
-		if (result.error) {
-			setLoadError(messageOf(result, 'Failed to load groups.'));
-			setGroups([]);
-		} else {
-			setLoadError(null);
-			setGroups(result.data ?? []);
-		}
-		setLoading(false);
-	}, []);
+	const load = useCallback(
+		async (isCurrent: () => boolean = () => true) => {
+			setLoading(true);
+			const result = await groupsApi.getAll();
+			if (!isCurrent()) return;
+			if (result.error) {
+				setLoadError(messageOf(result, t('Failed to load groups.')));
+				setGroups([]);
+			} else {
+				setLoadError(null);
+				setGroups(result.data ?? []);
+			}
+			setLoading(false);
+		},
+		[t],
+	);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -189,7 +194,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 				: await groupsApi.update(draft.id, input);
 		setSaving(false);
 		if (result.error || result.data == null) {
-			setSubmitError(messageOf(result, 'Could not save the group.'));
+			setSubmitError(messageOf(result, t('Could not save the group.')));
 			return;
 		}
 		setDraft(null);
@@ -204,7 +209,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 		const result = await groupsApi.delete(pendingDelete.id);
 		setDeleting(false);
 		if (result.error) {
-			setDeleteError(messageOf(result, 'Could not delete the group.'));
+			setDeleteError(messageOf(result, t('Could not delete the group.')));
 			return;
 		}
 		setPendingDelete(null);
@@ -215,7 +220,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 	const columns: TableColumn<Group>[] = [
 		{
 			key: 'name',
-			header: 'Group',
+			header: t('Group'),
 			cell: (group) => (
 				<div className="flex items-center gap-2">
 					<span
@@ -235,14 +240,14 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 		},
 		{
 			key: 'role',
-			header: 'Role',
+			header: t('Role'),
 			width: 'w-28',
 			nowrap: true,
-			cell: (group) => (group.role === Role.Admin ? 'Admin' : 'Viewer'),
+			cell: (group) => (group.role === Role.Admin ? t('Admin') : t('Viewer')),
 		},
 		{
 			key: 'members',
-			header: 'Members',
+			header: t('Members'),
 			cell: (group) => (
 				<span className="text-secondary" title={memberNames(group)}>
 					{memberNames(group)}
@@ -251,7 +256,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 		},
 		{
 			key: 'actions',
-			header: 'Actions',
+			header: t('Actions'),
 			width: 'w-16',
 			nowrap: true,
 			headerClassName: 'text-right',
@@ -260,12 +265,12 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 					<PopoverMenu
 						items={[
 							{
-								label: 'Edit',
+								label: t('Edit'),
 								icon: <Icon name={IconName.Pencil} className="h-3.5 w-3.5" />,
 								onClick: () => openEdit(group),
 							},
 							{
-								label: 'Delete',
+								label: t('Delete'),
 								icon: <Icon name={IconName.Trash} className="h-3.5 w-3.5" />,
 								onClick: () => {
 									setDeleteError(null);
@@ -281,7 +286,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 								iconOnly
 								type="button"
 								onClick={toggle}
-								aria-label={`Actions for ${group.name}`}
+								aria-label={t('Actions for {1}', group.name)}
 							>
 								<Icon name={IconName.DotsVertical} className="h-4 w-4" />
 							</Button>
@@ -299,10 +304,10 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 			<div className="mb-4 flex items-start justify-between gap-4">
 				<div>
 					<h2 className="text-lg font-semibold text-heading dark:text-zinc-100">
-						Groups
+						{t('Groups')}
 					</h2>
 					<p className="mt-1 text-xs text-secondary">
-						A group has its own role. Members keep the role on their account.
+						{t('A group has its own role. Members keep the role on their account.')}
 					</p>
 				</div>
 				<Button
@@ -311,7 +316,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 					type="button"
 					onClick={openCreate}
 				>
-					Create group
+					{t('Create group')}
 				</Button>
 			</div>
 
@@ -322,7 +327,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 			) : null}
 
 			{loading ? (
-				<div role="status" aria-label="Loading groups">
+				<div role="status" aria-label={t('Loading groups')}>
 					<SkeletonTable columns={4} rows={4} />
 				</div>
 			) : (
@@ -331,15 +336,15 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 					rows={groups}
 					rowKey={(group) => group.id}
 					layout="auto"
-					emptyMessage="No Groups Found"
+					emptyMessage={t('No Groups Found')}
 				/>
 			)}
 
 			<ModalCreateNewItem
 				open={draft != null}
 				onClose={closeDraft}
-				title={draft?.id == null ? 'Create Group' : 'Edit Group'}
-				submitLabel={draft?.id == null ? 'Create' : 'Save'}
+				title={draft?.id == null ? t('Create Group') : t('Edit Group')}
+				submitLabel={draft?.id == null ? t('Create') : t('Save')}
 				canSubmit={canSave}
 				onSubmit={save}
 				className="w-[560px] max-w-full"
@@ -348,9 +353,9 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 					<>
 						<div>
 							<label htmlFor="group-name" className={labelClassName}>
-								Name
+								{t('Name')}
 								<span className="ml-2 font-normal text-secondary dark:text-zinc-500">
-									(Max. {MAX_GROUP_NAME_LENGTH})
+									{t('(Max. {1})', MAX_GROUP_NAME_LENGTH)}
 								</span>
 							</label>
 							<input
@@ -362,13 +367,13 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 									setDraft({ ...draft, name: event.target.value });
 									setSubmitError(null);
 								}}
-								placeholder="Finance"
+								placeholder={t('Finance')}
 								className={inputClassName}
 							/>
 						</div>
 						<div>
 							<label htmlFor="group-description" className={labelClassName}>
-								Description
+								{t('Description')}
 							</label>
 							<textarea
 								id="group-description"
@@ -382,7 +387,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 						</div>
 						<div className="flex items-end gap-4">
 							<div>
-								<span className={labelClassName}>Color</span>
+								<span className={labelClassName}>{t('Color')}</span>
 								<ColorPicker
 									colors={GROUP_COLORS}
 									value={draft.color}
@@ -391,7 +396,7 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 							</div>
 							<div className="min-w-0 flex-1">
 								<label htmlFor="group-role" className={labelClassName}>
-									Role
+									{t('Role')}
 								</label>
 								<select
 									id="group-role"
@@ -401,17 +406,17 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 										setDraft({ ...draft, role: asRole(event.target.value) })
 									}
 								>
-									<option value={Role.Viewer}>Viewer</option>
-									<option value={Role.Admin}>Admin</option>
+									<option value={Role.Viewer}>{t('Viewer')}</option>
+									<option value={Role.Admin}>{t('Admin')}</option>
 								</select>
 							</div>
 						</div>
 						<div>
-							<span className={labelClassName}>Members</span>
+							<span className={labelClassName}>{t('Members')}</span>
 							{usersLoading ? (
-								<p className="text-xs text-secondary">Loading users…</p>
+								<p className="text-xs text-secondary">{t('Loading users…')}</p>
 							) : sortedUsers.length === 0 ? (
-								<p className="text-xs text-secondary">No users to add.</p>
+								<p className="text-xs text-secondary">{t('No users to add.')}</p>
 							) : (
 								<ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 p-2 dark:border-zinc-700">
 									{sortedUsers.map((user) => {
@@ -457,11 +462,11 @@ export const GroupsSection = ({ users, usersLoading, refreshToken }: GroupsSecti
 
 			<ConfirmModal
 				open={pendingDelete != null}
-				title="Delete Group"
+				title={t('Delete Group')}
 				message={
 					pendingDelete == null
 						? ''
-						: `Delete group "${pendingDelete.name}"? Members keep their accounts.`
+						: t('Delete group "{1}"? Members keep their accounts.', pendingDelete.name)
 				}
 				onConfirm={confirmDelete}
 				onCancel={() => {

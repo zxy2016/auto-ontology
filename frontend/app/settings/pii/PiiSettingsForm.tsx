@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState } from 'react';
 import { piiDetectionApi } from '@/api/settings';
 import { Toast } from '@/common/Toast';
@@ -11,6 +12,7 @@ import { Toggle } from '@/common/Toggle';
 import { ToastVariant } from '@/enums/toast';
 
 export const PiiSettingsForm = ({ initialEnabled }: { initialEnabled: boolean }) => {
+	const t = useTranslation();
 	// Seeded from the server (see page.tsx) so the correct state renders on first
 	// paint; updated optimistically and rolled back if the save fails.
 	const [enabled, setEnabled] = useState(initialEnabled);
@@ -35,7 +37,7 @@ export const PiiSettingsForm = ({ initialEnabled }: { initialEnabled: boolean })
 			);
 		} catch {
 			setEnabled(!next); // roll back the optimistic update
-			setError('Failed to update PII detection. Please try again.');
+			setError(t('Failed to update PII detection. Please try again.'));
 		} finally {
 			setSaving(false);
 		}
@@ -45,27 +47,28 @@ export const PiiSettingsForm = ({ initialEnabled }: { initialEnabled: boolean })
 		<div className="h-full overflow-auto p-6">
 			<div className="mx-auto max-w-xl">
 				<h1 className="mb-1 text-lg font-semibold text-heading dark:text-zinc-100">
-					PII Settings
+					{t('PII Settings')}
 				</h1>
 				<p className="mb-4 text-xs text-secondary">
-					When enabled, ingest classifies catalog columns and attaches the shared PII tag.
-					Turn it off to skip that step; existing tags are left in place.
+					{t(
+						'When enabled, ingest classifies catalog columns and attaches the shared PII tag. Turn it off to skip that step; existing tags are left in place.',
+					)}
 				</p>
 
 				<div className="flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
 					<div className="flex flex-col pr-4">
 						<span className="text-sm font-medium text-heading dark:text-zinc-100">
-							PII Detection
+							{t('PII Detection')}
 						</span>
 						<span className="text-xs text-secondary">
 							{enabled
-								? 'On — ingest classifies columns and tags PII.'
-								: 'Off — ingest skips PII classification.'}
+								? t('On — ingest classifies columns and tags PII.')
+								: t('Off — ingest skips PII classification.')}
 						</span>
 					</div>
 					<Toggle
 						checked={enabled}
-						aria-label="PII Detection"
+						aria-label={t('PII Detection')}
 						disabled={saving}
 						onChange={handleToggle}
 					/>

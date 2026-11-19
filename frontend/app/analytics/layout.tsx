@@ -2,11 +2,9 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Metadata } from 'next';
+import { translatedMetadata } from '@/lib/i18n/server';
 
-export const metadata: Metadata = {
-	title: 'Analytics',
-};
+export const generateMetadata = () => translatedMetadata('Analytics');
 
 export default function AnalyticsLayout({ children }: { children: React.ReactNode }) {
 	return children;

@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Translate } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { forwardRef, useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -64,18 +66,26 @@ export const LabelList = ({ values }: { values: string[] }) => {
 	);
 };
 
-export const ZonesRow = ({ zones }: { zones: TermZone[] }) => (
-	<div className="mt-2 flex flex-wrap items-center gap-1.5">
-		<span className="text-xs text-secondary">Zones:</span>
-		{zones.length > 0 ? (
-			zones.map((zone) => (
-				<Label key={zone.id} label={zone.name} color={zone.color} muted={!zone.enabled} />
-			))
-		) : (
-			<span className="text-xs text-secondary dark:text-zinc-400">-</span>
-		)}
-	</div>
-);
+export const ZonesRow = ({ zones }: { zones: TermZone[] }) => {
+	const t = useTranslation();
+	return (
+		<div className="mt-2 flex flex-wrap items-center gap-1.5">
+			<span className="text-xs text-secondary">{t('Zones:')}</span>
+			{zones.length > 0 ? (
+				zones.map((zone) => (
+					<Label
+						key={zone.id}
+						label={zone.name}
+						color={zone.color}
+						muted={!zone.enabled}
+					/>
+				))
+			) : (
+				<span className="text-xs text-secondary dark:text-zinc-400">-</span>
+			)}
+		</div>
+	);
+};
 
 export type ComposerPageHeader = {
 	/** Rendered as the page title. Every composed page names the entity it shows. */
@@ -178,6 +188,7 @@ const DescriptionSuggestion = ({
 	onSuggest: () => Promise<string | null>;
 	onApply: (suggestion: string) => void;
 }) => {
+	const t = useTranslation();
 	const [suggestion, setSuggestion] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -198,13 +209,13 @@ const DescriptionSuggestion = ({
 			.then((result) => {
 				if (cancelled) return;
 				if (result == null || result.trim() === '') {
-					setError('No suggestion available');
+					setError(t('No suggestion available'));
 					return;
 				}
 				setSuggestion(result);
 			})
 			.catch(() => {
-				if (!cancelled) setError('Failed to generate a suggestion');
+				if (!cancelled) setError(t('Failed to generate a suggestion'));
 			})
 			.finally(() => {
 				if (!cancelled) setLoading(false);
@@ -212,7 +223,7 @@ const DescriptionSuggestion = ({
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [t]);
 
 	if (!loading && suggestion == null && error == null) return null;
 
@@ -220,7 +231,7 @@ const DescriptionSuggestion = ({
 		<div className="mt-3 rounded-lg border border-[#76b900]/40 bg-[#76b900]/[0.06] p-4 dark:border-[#76b900]/30 dark:bg-[#76b900]/10">
 			<div className="flex items-center justify-between gap-3">
 				<h3 className="text-xs font-semibold uppercase tracking-wide text-[#4d7a00] dark:text-[#a3d63a]">
-					Description Suggestion
+					{t('Description Suggestion')}
 				</h3>
 				{suggestion != null && (
 					<Button
@@ -229,15 +240,15 @@ const DescriptionSuggestion = ({
 						type="button"
 						onClick={() => onApply(suggestion)}
 					>
-						Apply as Description
+						{t('Apply as Description')}
 					</Button>
 				)}
 			</div>
 			<div className="mt-2 text-sm leading-relaxed text-body dark:text-zinc-300">
 				{loading ? (
 					<span className="flex items-center gap-2 italic text-[#4d7a00]/70 dark:text-[#a3d63a]/70">
-						<Spinner aria-label="Generating suggestion" className="h-3.5 w-3.5" />
-						Generating suggestion…
+						<Spinner aria-label={t('Generating suggestion')} className="h-3.5 w-3.5" />
+						{t('Generating suggestion…')}
 					</span>
 				) : suggestion != null ? (
 					suggestion
@@ -266,6 +277,7 @@ const EditableTextCard = ({
 	onSuggest?: () => Promise<string | null>;
 	certificationSlot?: ReactNode;
 }) => {
+	const t = useTranslation();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [value, setValue] = useState(section.body);
 
@@ -313,11 +325,11 @@ const EditableTextCard = ({
 					>
 						{saving ? (
 							<>
-								<Spinner aria-label="Saving" className="h-3.5 w-3.5" />
-								Saving…
+								<Spinner aria-label={t('Saving')} className="h-3.5 w-3.5" />
+								{t('Saving…')}
 							</>
 						) : (
-							'Save'
+							t('Save')
 						)}
 					</Button>
 				</div>
@@ -335,6 +347,7 @@ const EditableTagListCard = ({
 	onChange: (sectionId: string, value: string[]) => void;
 	autoFocus?: boolean;
 }) => {
+	const t = useTranslation();
 	const [tags, setTags] = useState<string[]>(section.values);
 
 	const handleChange = (next: string[]) => {
@@ -352,13 +365,15 @@ const EditableTagListCard = ({
 					value={tags}
 					onChange={handleChange}
 					autoFocus={autoFocus}
-					placeholder="Type a Value And Press Enter"
+					placeholder={t('Type a Value And Press Enter')}
 					ariaLabel={section.title}
 				/>
 			</div>
 			<p className="mt-2 text-[11px] text-secondary dark:text-zinc-400">
 				{section.hint ??
-					'Press Enter or comma to add. Backspace to remove the last tag. Paste comma-separated values to add many at once.'}
+					t(
+						'Press Enter or comma to add. Backspace to remove the last tag. Paste comma-separated values to add many at once.',
+					)}
 			</p>
 		</div>
 	);
@@ -423,6 +438,7 @@ const EditableEntityTagsCard = ({
 	section: ComposerEntityTagsSection;
 	onChange: (sectionId: string, value: string[]) => void;
 }) => {
+	const t = useTranslation();
 	const [tags, setTags] = useState<ComposerTagChip[]>(() => [...section.tags].sort(byName));
 
 	const apply = (next: ComposerTagChip[]) => {
@@ -451,8 +467,8 @@ const EditableEntityTagsCard = ({
 						unassigned.length === 0 ? (
 							<p className="px-3 py-1.5 text-xs text-secondary dark:text-zinc-400">
 								{section.options.length === 0
-									? 'No tags exist yet'
-									: 'Every tag is already applied'}
+									? t('No tags exist yet')
+									: t('Every tag is already applied')}
 							</p>
 						) : undefined
 					}
@@ -465,7 +481,7 @@ const EditableEntityTagsCard = ({
 							iconPosition="left"
 						>
 							<Icon name={IconName.Plus} className="h-3.5 w-3.5" />
-							Add Tag
+							{t('Add Tag')}
 						</Button>
 					)}
 				/>
@@ -594,6 +610,7 @@ const ZonesSection = ({ section }: { section: ComposerZonesSection }) => {
 };
 
 function renderComposerSection(
+	t: Translate,
 	section: ComposerSection,
 	onTermClick?: (termId: string) => void,
 	onDataTableRowClick?: (sectionId: string, rowId: string) => void,
@@ -795,7 +812,7 @@ function renderComposerSection(
 					className="flex min-h-[min(50dvh,420px)] flex-col items-center justify-center gap-4 rounded-lg border border-zinc-200/80 bg-white/70 px-8 py-12 dark:border-zinc-700/80 dark:bg-zinc-950/40"
 					role="status"
 				>
-					<Spinner aria-label="Loading" />
+					<Spinner aria-label={t('Loading')} />
 					<p className="text-sm font-medium text-secondary dark:text-zinc-400">
 						{section.message}
 					</p>
@@ -875,8 +892,8 @@ function renderComposerSection(
 										}
 										console.log('edit sql section', section.id);
 									}}
-									aria-label={`Edit ${section.title}`}
-									title="Edit"
+									aria-label={t('Edit {1}', section.title)}
+									title={t('Edit')}
 								>
 									<Icon name={IconName.Pencil} className="h-4 w-4" />
 								</Button>
@@ -906,6 +923,7 @@ function breadcrumbsFromPdf(headerProps: Record<string, unknown> | undefined): B
 
 export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerProps>(
 	function SinglePageComposer(props, ref) {
+		const t = useTranslation();
 		const {
 			sections,
 			header,
@@ -1048,7 +1066,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 			setSaving(false);
 
 			if (res.error) {
-				setSaveError(res.message ?? 'Failed to save changes');
+				setSaveError(res.message ?? t('Failed to save changes'));
 				return;
 			}
 
@@ -1077,7 +1095,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 				>
 					<div className="border-b border-zinc-200 pb-4 dark:border-zinc-700">
 						<p className="text-xs font-medium uppercase tracking-wide text-secondary">
-							PDF preview
+							{t('PDF preview')}
 							{pdfPageName ? (
 								<span className="ml-2 font-normal normal-case text-body dark:text-zinc-400">
 									{pdfPageName}
@@ -1098,7 +1116,9 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 						{sections.map((s, i) => (
 							<li key={i} className="text-body dark:text-zinc-300">
 								<span className="font-medium">
-									{isComposerSection(s) ? composerSectionHeading(s) : 'Section'}
+									{isComposerSection(s)
+										? composerSectionHeading(s)
+										: t('Section')}
 								</span>
 							</li>
 						))}
@@ -1111,7 +1131,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 								type="button"
 								onClick={() => handleIsPDF(false)}
 							>
-								Close PDF Preview
+								{t('Close PDF Preview')}
 							</Button>
 						</div>
 					) : null}
@@ -1136,7 +1156,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 							iconPosition="left"
 						>
 							<Icon name={IconName.Pencil} className="h-3.5 w-3.5" />
-							Edit
+							{t('Edit')}
 						</Button>
 					)}
 					{isEditingActive && (
@@ -1153,7 +1173,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 									onCancel?.();
 								}}
 							>
-								Cancel
+								{t('Cancel')}
 							</Button>
 							{inlineSaveSectionId == null && (
 								<Button
@@ -1168,11 +1188,14 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 								>
 									{saving ? (
 										<>
-											<Spinner aria-label="Saving" className="h-3.5 w-3.5" />
-											Saving…
+											<Spinner
+												aria-label={t('Saving')}
+												className="h-3.5 w-3.5"
+											/>
+											{t('Saving…')}
 										</>
 									) : (
-										'Save'
+										t('Save')
 									)}
 								</Button>
 							)}
@@ -1209,7 +1232,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 							pendingEditsRef.current.name = e.target.value;
 						}}
 						className="min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-2xl font-semibold tracking-tight text-heading outline-none transition-colors focus:border-[#76b900] focus:ring-2 focus:ring-[#76b900]/30 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
-						aria-label="Name"
+						aria-label={t('Name')}
 					/>
 				) : (
 					<div className="min-w-0">
@@ -1276,8 +1299,10 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 											◇
 										</div>
 									}
-									title="Nothing Selected Yet"
-									description="Pick a database, schema, table, column, or field in the explorer to load metadata, descriptions, and related entities."
+									title={t('Nothing Selected Yet')}
+									description={t(
+										'Pick a database, schema, table, column, or field in the explorer to load metadata, descriptions, and related entities.',
+									)}
 								/>
 							) : (
 								sections.map((section, i) => {
@@ -1294,7 +1319,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 													typeof (section as { title: unknown }).title ===
 														'string'
 														? (section as { title: string }).title
-														: 'Section'}
+														: t('Section')}
 												</h2>
 												<pre className="mt-2 max-h-40 overflow-auto rounded bg-zinc-100 p-2 text-xs text-body dark:bg-zinc-900 dark:text-zinc-300">
 													{JSON.stringify(section, null, 2)}
@@ -1381,6 +1406,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 												/>
 											) : (
 												renderComposerSection(
+													t,
 													section,
 													handleTermClick,
 													onDataTableRowClick,
@@ -1401,7 +1427,7 @@ export const SinglePageComposer = forwardRef<HTMLDivElement, SinglePageComposerP
 						Object.keys(entityUpdatingProperties).length > 0 ? (
 							<div className="mt-6 rounded-lg border border-dashed border-zinc-300 p-3 dark:border-zinc-600">
 								<p className="mb-2 text-xs font-semibold uppercase text-secondary">
-									Entity updates (preview)
+									{t('Entity updates (preview)')}
 								</p>
 								<ul className="space-y-1 text-xs text-body dark:text-zinc-400">
 									{Object.entries(entityUpdatingProperties).map(([k, v]) => (

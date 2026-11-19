@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Message } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -175,7 +177,7 @@ function Row({
 	loading?: boolean;
 	name: string;
 	icon?: IconName;
-	title?: string;
+	title?: Message;
 	selected: boolean;
 	href?: string;
 	onClick?: () => void;
@@ -184,11 +186,16 @@ function Row({
 	/** After chevron toggles expand/collapse, sync `focus` to this node (same as row select). */
 	onChevronFocusSync?: () => void;
 }) {
+	const t = useTranslation();
 	const pad = 12 + depth * 12;
 	const style = { paddingLeft: pad, paddingRight: 12 };
 
 	const nodeIconEl = icon ? (
-		<span className="inline-flex shrink-0" title={title} aria-hidden>
+		<span
+			className="inline-flex shrink-0"
+			title={title == null ? undefined : t(title)}
+			aria-hidden
+		>
 			<Icon name={icon} className="h-4 w-4 text-secondary dark:text-zinc-400" />
 		</span>
 	) : null;
@@ -531,6 +538,7 @@ export function DataTree({
 	className = '',
 	onTreeDataUpdated,
 }: DataTreeProps) {
+	const t = useTranslation();
 	const [databases, setDatabases] = useState<Database[]>(initialDatabases);
 	const catalogFpRef = useRef('');
 
@@ -587,7 +595,7 @@ export function DataTree({
 	return (
 		<nav
 			className={`flex min-h-0 flex-1 flex-col gap-y-1 overflow-y-auto px-3 py-2 sm:px-4 ${className}`}
-			aria-label="Datasource tree"
+			aria-label={t('Datasource tree')}
 		>
 			{databases.map((database) => (
 				<DatabaseBlock

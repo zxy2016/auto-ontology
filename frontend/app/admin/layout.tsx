@@ -4,16 +4,18 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const tabs = [
 	{ href: '/admin/users', label: 'Users' },
 	{ href: '/admin/sso', label: 'Single Sign-On' },
-];
+] as const;
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 	const pathname = usePathname();
+	const t = useTranslation();
 
 	return (
 		<div className="flex h-full flex-col">
@@ -30,7 +32,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 									: 'border-transparent text-secondary hover:text-body dark:hover:text-zinc-300'
 							}`}
 						>
-							{tab.label}
+							{t(tab.label)}
 						</Link>
 					);
 				})}

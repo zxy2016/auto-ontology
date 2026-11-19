@@ -2,12 +2,10 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Metadata } from 'next';
+import { translatedMetadata } from '@/lib/i18n/server';
 import { requireUser } from '@/auth/auth-guards';
 
-export const metadata: Metadata = {
-	title: 'Account',
-};
+export const generateMetadata = () => translatedMetadata('Account');
 
 // Unlike /settings (admin-only), /account is every user's own space — API
 // tokens are self-service for viewers too. Any authenticated user passes.

@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/auth/auth-client';
@@ -47,6 +48,7 @@ function ConversationItem({
 	onDelete: () => void;
 	canDelete: boolean;
 }) {
+	const t = useTranslation();
 	const [editing, setEditing] = useState(false);
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	const [editValue, setEditValue] = useState(conv.title);
@@ -99,7 +101,7 @@ function ConversationItem({
 				selected={isActive}
 				onClick={onSelect}
 			>
-				<Text text={conv.title} />
+				<Text text={conv.title || t('New conversation')} />
 				<span className="mt-0.5 block text-[10px] text-secondary dark:text-zinc-400">
 					{formatDate(conv.createdAt, '(DD.MM.YY)')}
 				</span>
@@ -109,7 +111,7 @@ function ConversationItem({
 				className="absolute right-1 top-1.5 opacity-0 transition-opacity group-hover:opacity-100"
 				items={[
 					{
-						label: 'Rename',
+						label: t('Rename'),
 						icon: <Icon name={IconName.Pencil} className="h-3.5 w-3.5" />,
 						onClick: () => {
 							setEditValue(conv.title);
@@ -121,7 +123,7 @@ function ConversationItem({
 					...(canDelete
 						? [
 								{
-									label: 'Delete',
+									label: t('Delete'),
 									icon: <Icon name={IconName.Trash} className="h-3.5 w-3.5" />,
 									onClick: () => setConfirmDelete(true),
 									danger: true,
@@ -136,7 +138,7 @@ function ConversationItem({
 						iconOnly
 						type="button"
 						onClick={toggle}
-						aria-label="Conversation options"
+						aria-label={t('Conversation options')}
 					>
 						<Icon name={IconName.DotsVertical} className="h-4 w-4" />
 					</Button>
@@ -146,8 +148,10 @@ function ConversationItem({
 			{canDelete ? (
 				<ConfirmModal
 					open={confirmDelete}
-					title="Delete Conversation"
-					message="Are you sure you want to delete this conversation? This action cannot be undone."
+					title={t('Delete Conversation')}
+					message={t(
+						'Are you sure you want to delete this conversation? This action cannot be undone.',
+					)}
 					onConfirm={() => {
 						setConfirmDelete(false);
 						onDelete();
@@ -170,6 +174,7 @@ export const ChatSidebar = ({
 	onToggle,
 	sidebarLoading = false,
 }: ChatSidebarProps) => {
+	const t = useTranslation();
 	const { data } = useSession();
 	const canDelete = data?.user
 		? userCan({ id: data.user.id, role: data.user.role ?? null }, { conversation: ['delete'] })
@@ -185,7 +190,7 @@ export const ChatSidebar = ({
 					iconOnly
 					type="button"
 					onClick={onToggle}
-					aria-label="Toggle sidebar"
+					aria-label={t('Toggle sidebar')}
 				>
 					<Icon name={IconName.Menu} className="h-5 w-5" />
 				</Button>
@@ -225,19 +230,19 @@ export const ChatSidebar = ({
 						full
 					>
 						<span className="text-lg leading-none text-[#76b900]">+</span>
-						New Chat
+						{t('New Chat')}
 					</Button>
 				</div>
 
 				<nav className="flex-1 overflow-y-auto px-2 pb-2">
 					{sidebarLoading ? (
-						<div className="py-2" role="status" aria-label="Loading conversations">
+						<div className="py-2" role="status" aria-label={t('Loading conversations')}>
 							<SkeletonRows rows={8} />
 						</div>
 					) : conversations.length === 0 ? (
 						<EmptyState
 							variant={EmptyStateVariant.Inline}
-							title="No Conversations Yet"
+							title={t('No Conversations Yet')}
 						/>
 					) : (
 						<ul className="space-y-0.5">

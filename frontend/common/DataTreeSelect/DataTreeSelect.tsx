@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useRef, useState } from 'react';
 import type { Database, Schema, Table } from '@/types/datasources';
 import { DataModels, TableType } from '@/enums/datasources';
@@ -89,6 +90,7 @@ export const DataTreeSelect = ({
 	selectionName,
 	framed = true,
 }: DataTreeSelectProps) => {
+	const t = useTranslation();
 	const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
 	const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({});
 	const lastAppliedExpandKeyRef = useRef<number | undefined>(undefined);
@@ -339,7 +341,7 @@ export const DataTreeSelect = ({
 					void onToggle();
 				}}
 				className="inline-flex w-4 shrink-0 cursor-pointer items-center justify-center rounded text-[10px] text-secondary hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80"
-				aria-label={isOpen ? 'Collapse' : 'Expand'}
+				aria-label={isOpen ? t('Collapse') : t('Expand')}
 			>
 				{loadingIds[id] ? '…' : hasChildren ? (isOpen ? '▼' : '▶') : '·'}
 			</button>

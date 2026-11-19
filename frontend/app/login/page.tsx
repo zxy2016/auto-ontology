@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/common/Button';
@@ -18,17 +19,20 @@ import { SkeletonVariant } from '@/enums/skeleton';
 const inputClass =
 	'w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-body outline-none transition-colors placeholder:text-secondary focus:border-[#76b900] focus:ring-2 focus:ring-[#76b900]/30 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300';
 
-const LoginLoading = () => (
-	<div
-		className="w-full max-w-sm space-y-4 py-6"
-		role="status"
-		aria-label="Loading sign-in options"
-	>
-		<SkeletonBlock variant={SkeletonVariant.RECTANGLE} className="h-10 w-full" />
-		<SkeletonBlock variant={SkeletonVariant.RECTANGLE} className="h-10 w-full" />
-		<SkeletonBlock className="mx-auto h-3 w-1/3" />
-	</div>
-);
+const LoginLoading = () => {
+	const t = useTranslation();
+	return (
+		<div
+			className="w-full max-w-sm space-y-4 py-6"
+			role="status"
+			aria-label={t('Loading sign-in options')}
+		>
+			<SkeletonBlock variant={SkeletonVariant.RECTANGLE} className="h-10 w-full" />
+			<SkeletonBlock variant={SkeletonVariant.RECTANGLE} className="h-10 w-full" />
+			<SkeletonBlock className="mx-auto h-3 w-1/3" />
+		</div>
+	);
+};
 
 // An MCP client sends a user here to sign in, by way of an authorize request
 // that arrived without a session (see the `mcp` plugin's `loginPage` in
@@ -44,6 +48,7 @@ const resumeAuthorize = (params: URLSearchParams): string | null =>
 		: null;
 
 const LoginForm = () => {
+	const t = useTranslation();
 	const router = useRouter();
 	const params = useSearchParams();
 	const next = params.get('next') || resumeAuthorize(params) || '/chat';
@@ -100,7 +105,7 @@ const LoginForm = () => {
 		setError(null);
 		const result = await authApi.signInWithPassword(email, password);
 		if (result.error) {
-			setError(result.error.message ?? 'Invalid email or password.');
+			setError(result.error.message ?? t('Invalid email or password.'));
 			setSubmitting(false);
 			return;
 		}
@@ -136,7 +141,7 @@ const LoginForm = () => {
 						type="button"
 						onClick={() => handleSso(provider.provider_id)}
 					>
-						Sign In with SSO
+						{t('Sign In with SSO')}
 					</Button>
 				))}
 				<Button
@@ -148,7 +153,7 @@ const LoginForm = () => {
 						setShowPasswordLogin(true);
 					}}
 				>
-					Sign In with Password
+					{t('Sign In with Password')}
 				</Button>
 			</div>
 		);
@@ -159,7 +164,7 @@ const LoginForm = () => {
 		<form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
 			<div className="flex flex-col gap-1.5">
 				<label htmlFor="email" className="text-xs font-medium text-body dark:text-zinc-400">
-					Email
+					{t('Email')}
 				</label>
 				<input
 					id="email"
@@ -176,7 +181,7 @@ const LoginForm = () => {
 					htmlFor="password"
 					className="text-xs font-medium text-body dark:text-zinc-400"
 				>
-					Password
+					{t('Password')}
 				</label>
 				<input
 					id="password"
@@ -197,7 +202,7 @@ const LoginForm = () => {
 				type="submit"
 				disabled={submitting}
 			>
-				{submitting ? 'Signing in…' : 'Sign in'}
+				{submitting ? t('Signing in…') : t('Sign in')}
 			</Button>
 
 			{ssoEnabled ? (
@@ -210,7 +215,7 @@ const LoginForm = () => {
 						setShowPasswordLogin(false);
 					}}
 				>
-					Back to SSO
+					{t('Back to SSO')}
 				</Button>
 			) : null}
 		</form>

@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState } from 'react';
 import { Spinner } from '@nvidia/foundations-react-core';
 import { CertificationBadge, CERTIFICATION_LABEL } from '@/common/CertificationBadge';
@@ -32,6 +33,7 @@ export const CertificationSelect = ({
 	disabled = false,
 	showLabel = false,
 }: CertificationSelectProps) => {
+	const t = useTranslation();
 	const [saving, setSaving] = useState(false);
 	const status = fieldStatus(certified);
 
@@ -51,14 +53,14 @@ export const CertificationSelect = ({
 
 	const items = [
 		{
-			label: 'Pending Approval',
+			label: t('Pending Approval'),
 			icon: <Icon name={IconName.Certification} className="h-4 w-4 text-secondary" />,
 			onClick: () => {
 				void select(false);
 			},
 		},
 		{
-			label: 'Certified',
+			label: t('Certified'),
 			icon: <Icon name={IconName.Certification} className="h-4 w-4 text-[#76b900]" />,
 			onClick: () => {
 				void select(true);
@@ -79,14 +81,14 @@ export const CertificationSelect = ({
 					// status it is about to change as well as the action.
 					title={
 						saving
-							? 'Saving Certification…'
-							: `Set Certification (${CERTIFICATION_LABEL[status]})`
+							? t('Saving Certification…')
+							: t('Set Certification ({1})', t(CERTIFICATION_LABEL[status]))
 					}
 					className={`inline-flex items-center gap-1 ${saving ? 'cursor-default opacity-70' : 'cursor-pointer'}`}
 				>
 					<CertificationBadge status={status} iconOnly={!showLabel} decorative />
 					{saving ? (
-						<Spinner aria-label="Saving certification" className="h-3.5 w-3.5" />
+						<Spinner aria-label={t('Saving certification')} className="h-3.5 w-3.5" />
 					) : (
 						<Icon
 							name={IconName.ChevronRight}

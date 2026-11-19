@@ -2,6 +2,7 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import type { Translate } from '@/types/i18n';
 import { entitySidePanel } from '@/common/SidePanel';
 import type { SinglePageFormat } from '@/common/SinglePageView';
 import { IconName } from '@/common/icons';
@@ -86,6 +87,7 @@ export function resolveTreeNode(focusId: string | null, databases: Database[]): 
 }
 
 function baseCardsForEntity(
+	t: Translate,
 	description: string,
 	items: { label: string; value: string }[],
 	certification?: ComposerCertification,
@@ -94,7 +96,7 @@ function baseCardsForEntity(
 		{
 			type: ComposerSectionKind.TEXT_CARD,
 			id: 'description',
-			title: 'Description',
+			title: t('Description'),
 			body: description,
 			editable: true,
 			certification,
@@ -102,7 +104,7 @@ function baseCardsForEntity(
 		{
 			type: ComposerSectionKind.INFO_GRID,
 			id: 'information',
-			title: 'Information',
+			title: t('Information'),
 			items,
 		},
 	];
@@ -117,6 +119,7 @@ function baseCardsForEntity(
  * right answer for a caller that knows the focus is one of those.
  */
 export function buildTreeFocusPageFormat(
+	t: Translate,
 	focusId: string | null,
 	databases: Database[],
 	tagOptions: TagChip[] = [],
@@ -129,12 +132,12 @@ export function buildTreeFocusPageFormat(
 			{
 				type: ComposerSectionKind.LOADING_PANEL,
 				id: 'tree-focus-loading',
-				message: 'Loading catalog details…',
+				message: t('Loading catalog details…'),
 			},
 		];
 		return {
 			sections,
-			header: { header: { title: 'Loading…' } },
+			header: { header: { title: t('Loading…') } },
 		};
 	}
 
@@ -143,18 +146,18 @@ export function buildTreeFocusPageFormat(
 			{
 				type: ComposerSectionKind.TEXT_CARD,
 				id: 'catalog-intro',
-				title: 'Catalog',
+				title: t('Catalog'),
 				body:
 					databases.length === 0
-						? 'No databases are available yet.'
-						: 'Choose a database in the tree or pick one from the table below.',
+						? t('No databases are available yet.')
+						: t('Choose a database in the tree or pick one from the table below.'),
 			},
 		];
 		if (databases.length > 0) {
 			sections.push({
 				type: ComposerSectionKind.DATA_TABLE,
 				id: 'all-databases',
-				title: `Databases (${databases.length})`,
+				title: t('Databases ({1})', databases.length),
 				rowIdKey: 'id',
 				columns: [
 					{ key: 'name', label: 'Name' },
@@ -169,7 +172,7 @@ export function buildTreeFocusPageFormat(
 		}
 		return {
 			sections,
-			header: { header: { title: 'All Data', icon: IconName.Database } },
+			header: { header: { title: t('All Data'), icon: IconName.Database } },
 		};
 	}
 
@@ -179,14 +182,14 @@ export function buildTreeFocusPageFormat(
 		case DataModels.DB: {
 			const { database } = resolvedFocus;
 			sections.push(
-				...baseCardsForEntity(database.description ?? '', [
-					{ label: 'Schemas', value: String(database.schemas.length) },
+				...baseCardsForEntity(t, database.description ?? '', [
+					{ label: t('Schemas'), value: String(database.schemas.length) },
 				]),
 			);
 			sections.push({
 				type: ComposerSectionKind.DATA_TABLE,
 				id: 'child-schemas',
-				title: `Schemas (${database.schemas.length})`,
+				title: t('Schemas ({1})', database.schemas.length),
 				rowIdKey: 'id',
 				columns: [
 					{ key: 'name', label: 'Name' },
@@ -212,23 +215,23 @@ export function buildTreeFocusPageFormat(
 		case DataModels.SCHEMA: {
 			const { database, schema } = resolvedFocus;
 			sections.push(
-				...baseCardsForEntity(schema.description ?? '', [
-					{ label: 'Schema', value: schema.schema_name },
-					{ label: 'Database', value: database.name },
-					{ label: 'Tables', value: String(schema.tables_count) },
+				...baseCardsForEntity(t, schema.description ?? '', [
+					{ label: t('Schema'), value: schema.schema_name },
+					{ label: t('Database'), value: database.name },
+					{ label: t('Tables'), value: String(schema.tables_count) },
 				]),
 			);
 			sections.push({
 				type: ComposerSectionKind.DATA_TABLE,
 				id: 'child-tables',
-				title: `Tables (${schema.tables.length})`,
+				title: t('Tables ({1})', schema.tables.length),
 				rowIdKey: 'id',
 				columns: [
 					{ key: 'name', label: 'Name' },
 					{ key: 'columns', label: 'Columns' },
 					{
 						key: 'certification',
-						label: 'Certification',
+						label: t('Certification'),
 						type: ComposerColumnType.CERTIFICATION,
 						align: 'center',
 					},
@@ -255,16 +258,17 @@ export function buildTreeFocusPageFormat(
 		case DataModels.TABLE: {
 			const { table } = resolvedFocus;
 			const tableInfo = catalogNodeInfo[getTableType(table.table_type)];
-			const tableTypeLabel = tableInfo.title;
+			const tableTypeLabel = t(tableInfo.title);
 			sections.push(
 				...baseCardsForEntity(
+					t,
 					table.description ?? '',
 					[
-						{ label: 'Type', value: tableTypeLabel },
-						{ label: 'Name', value: table.name },
-						{ label: 'Schema', value: table.schema_name },
-						{ label: 'Database', value: table.database_name },
-						{ label: 'Columns', value: String(table.columns_count) },
+						{ label: t('Type'), value: tableTypeLabel },
+						{ label: t('Name'), value: table.name },
+						{ label: t('Schema'), value: table.schema_name },
+						{ label: t('Database'), value: table.database_name },
+						{ label: t('Columns'), value: String(table.columns_count) },
 					],
 					{ certified: table.description_certified === true },
 				),
@@ -272,7 +276,7 @@ export function buildTreeFocusPageFormat(
 			sections.push({
 				type: ComposerSectionKind.DATA_TABLE,
 				id: 'child-columns',
-				title: `Columns (${table.columns.length})`,
+				title: t('Columns ({1})', table.columns.length),
 				rowIdKey: 'id',
 				columns: [
 					{ key: 'ordinal_position', label: '#' },
@@ -280,7 +284,7 @@ export function buildTreeFocusPageFormat(
 					{ key: 'data_type', label: 'Type' },
 					{
 						key: 'certification',
-						label: 'Certification',
+						label: t('Certification'),
 						type: ComposerColumnType.CERTIFICATION,
 						align: 'center',
 					},
@@ -315,7 +319,7 @@ export function buildTreeFocusPageFormat(
 				{
 					type: ComposerSectionKind.TEXT_CARD,
 					id: 'description',
-					title: 'Description',
+					title: t('Description'),
 					body: column.description ?? '',
 					editable: true,
 					certification: { certified: column.description_certified === true },
@@ -323,23 +327,25 @@ export function buildTreeFocusPageFormat(
 				{
 					type: ComposerSectionKind.TAG_LIST,
 					id: 'sample_values',
-					title: 'Sample Values',
+					title: t('Sample Values'),
 					values: Array.isArray(column.sample_values) ? column.sample_values : [],
 					editable: samplesEditable,
-					hint: samplesEditable ? undefined : sampleValuesReadOnlyHint(column.data_type),
+					hint: samplesEditable
+						? undefined
+						: sampleValuesReadOnlyHint(column.data_type, t),
 				},
 				{
 					type: ComposerSectionKind.INFO_GRID,
 					id: 'information',
-					title: 'Information',
+					title: t('Information'),
 					items: [
-						{ label: 'Column', value: column.column_name },
+						{ label: t('Column'), value: column.column_name },
 						{
-							label: 'Data Type',
+							label: t('Data Type'),
 							value: column.data_type?.trim() ? column.data_type : '—',
 						},
-						{ label: 'Table', value: column.table_name },
-						{ label: 'Position', value: String(column.ordinal_position) },
+						{ label: t('Table'), value: column.table_name },
+						{ label: t('Position'), value: String(column.ordinal_position) },
 					],
 				},
 			);
@@ -358,7 +364,7 @@ export function buildTreeFocusPageFormat(
 						owners,
 						OwnerPermission.catalog,
 						false,
-						'Table Owner',
+						t('Table Owner'),
 					),
 					tags: entityTagsSection(column.tags, tagOptions),
 				}),

@@ -14,9 +14,12 @@ import {
 	type ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
+import { SETTINGS_SECTIONS } from '@/constants/settingsNavigation';
+import { useTranslation } from '@/contexts/LocaleContext';
+import type { Message } from '@/types/i18n';
 import type { BreadcrumbItem } from '@/common/Breadcrumbs';
 
-const SECTION_LABELS: Record<string, string> = {
+const SECTION_LABELS: Record<string, Message> = {
 	'/chat': 'Chat',
 	'/discovery': 'Discovery',
 	'/terms': 'Terms',
@@ -25,25 +28,14 @@ const SECTION_LABELS: Record<string, string> = {
 	'/data': 'All Data',
 	'/analytics': 'Analytics',
 	'/settings': 'Settings',
+	'/account/api-tokens': 'API Tokens',
 };
 
-const SETTINGS_SECTION_LABELS: Record<string, string> = {
-	connections: 'Connections',
-	zones: 'Zones',
-	tags: 'Tags',
-	rules: 'Rules',
-	'semantic-input': 'Semantic Input',
-	'semantic-compilation': 'Semantic Compilation',
-	pii: 'PII Settings',
-	'agent-settings': 'Agent Settings',
-	users: 'Users',
-	sso: 'Single Sign-On',
-	'import-export': 'Import / Export',
-};
-
+type RouteCrumb = { label: Message; href: string };
+const EMPTY_ROUTE: RouteCrumb[] = [];
 const EMPTY_TRAIL: BreadcrumbItem[] = [];
 
-const sectionForPath = (path: string): BreadcrumbItem | null => {
+const sectionForPath = (path: string): RouteCrumb | null => {
 	const href = Object.keys(SECTION_LABELS).find(
 		(prefix) => path === prefix || path.startsWith(`${prefix}/`),
 	);
@@ -51,13 +43,13 @@ const sectionForPath = (path: string): BreadcrumbItem | null => {
 	return href != null && label != null ? { label, href } : null;
 };
 
-const crumbsForPath = (path: string): BreadcrumbItem[] => {
+const crumbsForPath = (path: string): RouteCrumb[] => {
 	const section = sectionForPath(path);
-	if (section == null) return EMPTY_TRAIL;
+	if (section == null) return EMPTY_ROUTE;
 	if (section.href !== '/settings') return [section];
 
 	const slug = path.split('/')[2];
-	const label = slug == null ? undefined : SETTINGS_SECTION_LABELS[slug];
+	const label = SETTINGS_SECTIONS.find((item) => item.slug === slug)?.label;
 	return label == null ? [section] : [section, { label, href: `/settings/${slug}` }];
 };
 
@@ -80,8 +72,9 @@ const BreadcrumbContext = createContext<BreadcrumbContextValue>({
 
 export const BreadcrumbProvider = ({ children }: { children: ReactNode }) => {
 	const pathname = usePathname();
+	const t = useTranslation();
 	const [prevPath, setPrevPath] = useState<string | null>(null);
-	const [routeCrumbs, setRouteCrumbs] = useState<BreadcrumbItem[]>(EMPTY_TRAIL);
+	const [routeCrumbs, setRouteCrumbs] = useState<RouteCrumb[]>(EMPTY_ROUTE);
 	const [trail, setTrailRaw] = useState<BreadcrumbItem[]>(EMPTY_TRAIL);
 	const [rightSlot, setRightSlotRaw] = useState<ReactNode>(null);
 
@@ -106,8 +99,8 @@ export const BreadcrumbProvider = ({ children }: { children: ReactNode }) => {
 	}
 
 	const items = useMemo(
-		() => (trail.length === 0 ? routeCrumbs : [...routeCrumbs, ...trail]),
-		[routeCrumbs, trail],
+		() => [...routeCrumbs.map(({ label, href }) => ({ label: t(label), href })), ...trail],
+		[routeCrumbs, trail, t],
 	);
 
 	const value = useMemo(

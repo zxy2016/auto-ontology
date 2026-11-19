@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import type { ChangeEvent } from 'react';
 import { Spinner } from '@nvidia/foundations-react-core';
 import { Button } from '@/common/Button';
@@ -44,10 +45,11 @@ export const ConnectionConnectStep = ({
 	testDisabled = false,
 	testingConnection = false,
 }: ConnectionConnectStepProps) => {
+	const t = useTranslation();
 	if (loading) {
 		return (
 			<div className="flex flex-1 items-center justify-center">
-				<Spinner aria-label="Loading connection" className="h-10 w-10" />
+				<Spinner aria-label={t('Loading connection')} className="h-10 w-10" />
 			</div>
 		);
 	}
@@ -58,7 +60,7 @@ export const ConnectionConnectStep = ({
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-2">
 			<p className="text-sm text-body dark:text-zinc-400">
-				Connect to {connectionDisplayName[connectionType]}
+				{t('Connect to {1}', connectionDisplayName[connectionType])}
 			</p>
 			<div className="flex w-full flex-col gap-3">
 				{fields.map((field) => {
@@ -84,11 +86,11 @@ export const ConnectionConnectStep = ({
 										data-testid={`connection-field-${field.key}`}
 										className="h-4 w-4 rounded border-zinc-300 accent-[#76b900] dark:border-zinc-600"
 									/>
-									{field.label}
+									{t(field.label)}
 								</span>
 								{field.hint != null && (
 									<span className="text-xs text-secondary dark:text-zinc-400">
-										{field.hint}
+										{t(field.hint)}
 									</span>
 								)}
 							</label>
@@ -116,7 +118,7 @@ export const ConnectionConnectStep = ({
 						return (
 							<label key={field.key} className="flex flex-col gap-1.5">
 								<span className="text-sm font-medium text-heading dark:text-zinc-200">
-									{field.label}
+									{t(field.label)}
 									{field.optional ? null : (
 										<span className="ml-0.5 text-red-500">*</span>
 									)}
@@ -130,12 +132,15 @@ export const ConnectionConnectStep = ({
 								/>
 								{encoded !== '' && (
 									<span className="text-xs text-secondary dark:text-zinc-400">
-										{`Loaded ${Math.round((encoded.length * 3) / 4 / 1024)} KB`}
+										{t(
+											'Loaded {1} KB',
+											Math.round((encoded.length * 3) / 4 / 1024),
+										)}
 									</span>
 								)}
 								{field.hint != null && (
 									<span className="text-xs text-secondary dark:text-zinc-400">
-										{field.hint}
+										{t(field.hint)}
 									</span>
 								)}
 							</label>
@@ -151,7 +156,7 @@ export const ConnectionConnectStep = ({
 					return (
 						<label key={field.key} className="flex flex-col gap-1.5">
 							<span className="text-sm font-medium text-heading dark:text-zinc-200">
-								{field.label}
+								{t(field.label)}
 								{field.optional || keepsCurrent ? null : (
 									<span className="ml-0.5 text-red-500">*</span>
 								)}
@@ -162,7 +167,11 @@ export const ConnectionConnectStep = ({
 								<textarea
 									value={values[field.key] ?? ''}
 									onChange={onChange}
-									placeholder={field.placeholder}
+									placeholder={
+										field.placeholderMessage
+											? t(field.placeholderMessage)
+											: field.placeholder
+									}
 									rows={5}
 									spellCheck={false}
 									readOnly={readOnly}
@@ -174,7 +183,11 @@ export const ConnectionConnectStep = ({
 									type={field.secret ? 'password' : 'text'}
 									value={values[field.key] ?? ''}
 									onChange={onChange}
-									placeholder={field.placeholder}
+									placeholder={
+										field.placeholderMessage
+											? t(field.placeholderMessage)
+											: field.placeholder
+									}
 									autoComplete={field.secret ? 'new-password' : 'off'}
 									readOnly={readOnly}
 									data-testid={`connection-field-${field.key}`}
@@ -183,12 +196,12 @@ export const ConnectionConnectStep = ({
 							)}
 							{keepsCurrent && (
 								<span className="text-xs text-secondary dark:text-zinc-400">
-									Leave empty to keep the stored value.
+									{t('Leave empty to keep the stored value.')}
 								</span>
 							)}
 							{field.hint != null && (
 								<span className="text-xs text-secondary dark:text-zinc-400">
-									{field.hint}
+									{t(field.hint)}
 								</span>
 							)}
 						</label>
@@ -204,7 +217,7 @@ export const ConnectionConnectStep = ({
 						onClick={onTestConnection}
 						disabled={testButtonDisabled}
 					>
-						{testingConnection ? 'Test Connection…' : 'Test Connection'}
+						{testingConnection ? t('Test Connection…') : t('Test Connection')}
 					</Button>
 				)}
 				{testSuccessMessage != null && (

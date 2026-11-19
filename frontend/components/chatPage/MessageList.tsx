@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useRef } from 'react';
 import type { ChatMessage, GraphStep } from '@/types/chat';
 import { EmptyState } from '@/common/EmptyState';
@@ -29,6 +30,7 @@ export const MessageList = ({
 	liveSql,
 	messageListLoading = false,
 }: MessageListProps) => {
+	const t = useTranslation();
 	const bottomRef = useRef<HTMLDivElement>(null);
 
 	// Re-pin to the bottom whenever the rendered content grows. `steps` is
@@ -45,7 +47,7 @@ export const MessageList = ({
 			<div
 				className="flex flex-1 flex-col gap-4 p-6"
 				role="status"
-				aria-label="Loading messages"
+				aria-label={t('Loading messages')}
 			>
 				<SkeletonBlock className="h-16 w-2/3" />
 				<SkeletonBlock className="ml-auto h-12 w-1/2" />
@@ -63,8 +65,10 @@ export const MessageList = ({
 						<Icon name={IconName.ChatBubble} className="h-7 w-7 text-[#76b900]" />
 					</div>
 				}
-				title="Ask a Question"
-				description="Type a natural-language question and the system will search your data, construct a SQL query, and return results."
+				title={t('Ask a Question')}
+				description={t(
+					'Type a natural-language question and the system will search your data, construct a SQL query, and return results.',
+				)}
 			/>
 		);
 	}

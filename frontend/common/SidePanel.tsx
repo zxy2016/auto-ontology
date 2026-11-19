@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
@@ -32,7 +33,7 @@ export const SIDE_PANEL_WIDTH = '280px';
 
 export type SidePanelActivity = {
 	kind: 'activity';
-	title: string;
+	title: 'Created By' | 'Last Modified';
 	author: TagAuthor | null;
 	date: string | null;
 };
@@ -75,7 +76,7 @@ export const entitySidePanel = ({
 			? [
 					{
 						kind: 'activity' as const,
-						title: 'Created By',
+						title: 'Created By' as const,
 						author: activity?.created_by_user ?? null,
 						date: activity?.created ?? null,
 					},
@@ -85,7 +86,7 @@ export const entitySidePanel = ({
 			? [
 					{
 						kind: 'activity' as const,
-						title: 'Last Modified',
+						title: 'Last Modified' as const,
 						author: activity.modified_by_user ?? null,
 						date: activity.modified ?? null,
 					},
@@ -144,12 +145,13 @@ const CalendarIcon = () => (
 );
 
 const ActivityBody = ({ bulk }: { bulk: SidePanelActivity }) => {
+	const t = useTranslation();
 	const name = bulk.author?.name || bulk.author?.email || '';
 	const neverModified = bulk.title === 'Last Modified' && name === '' && bulk.date == null;
 	if (neverModified) {
 		return <p className="text-sm text-secondary dark:text-zinc-400">—</p>;
 	}
-	const label = name || AUTO_GENERATED_LABEL;
+	const label = name || t(AUTO_GENERATED_LABEL);
 	return (
 		<div className="space-y-3">
 			<span className="flex min-w-0 items-center gap-2 text-sm text-body dark:text-zinc-300">
@@ -227,6 +229,7 @@ const TagEditor = ({
 	section: ComposerEntityTagsSection;
 	onChange: (id: string, value: string[]) => void;
 }) => {
+	const t = useTranslation();
 	const [tags, setTags] = useState<ComposerTagChip[]>(() => [...section.tags].sort(byName));
 	const assigned = new Set(tags.map((tag) => tag.id));
 	const unassigned = section.options.filter((tag) => !assigned.has(tag.id));
@@ -251,8 +254,8 @@ const TagEditor = ({
 						unassigned.length === 0 ? (
 							<p className="px-3 py-1.5 text-xs text-secondary dark:text-zinc-400">
 								{section.options.length === 0
-									? 'No tags exist yet'
-									: 'Every tag is already applied'}
+									? t('No tags exist yet')
+									: t('Every tag is already applied')}
 							</p>
 						) : undefined
 					}
@@ -265,13 +268,13 @@ const TagEditor = ({
 							iconPosition="left"
 						>
 							<Icon name={IconName.Plus} className="h-3.5 w-3.5" />
-							Add Tag
+							{t('Add Tag')}
 						</Button>
 					)}
 				/>
 			</div>
 			{tags.length === 0 ? (
-				<p className="text-sm text-secondary dark:text-zinc-400">No Tags Added</p>
+				<p className="text-sm text-secondary dark:text-zinc-400">{t('No Tags Added')}</p>
 			) : (
 				<ul className="flex w-full min-w-0 flex-wrap gap-1.5">
 					{tags.map((tag) => (
@@ -288,9 +291,10 @@ const TagEditor = ({
 	);
 };
 
-const TagList = ({ tags }: { tags: ComposerTagChip[] }) =>
-	tags.length === 0 ? (
-		<p className="text-sm text-secondary dark:text-zinc-400">No Tags Added</p>
+const TagList = ({ tags }: { tags: ComposerTagChip[] }) => {
+	const t = useTranslation();
+	return tags.length === 0 ? (
+		<p className="text-sm text-secondary dark:text-zinc-400">{t('No Tags Added')}</p>
 	) : (
 		<ul className="flex w-full min-w-0 flex-wrap gap-1.5">
 			{[...tags].sort(byName).map((tag) => (
@@ -300,6 +304,7 @@ const TagList = ({ tags }: { tags: ComposerTagChip[] }) =>
 			))}
 		</ul>
 	);
+};
 
 const TagBulk = ({
 	section,
@@ -330,34 +335,37 @@ export const SidePanel = ({
 	bulks: SidePanelBulk[];
 	isEditing: boolean;
 	onChange: (id: string, value: string | string[]) => void;
-}) => (
-	<div className="flex w-full min-w-0 flex-col gap-5 px-4 py-5">
-		{bulks.map((bulk) => {
-			if (bulk.kind === 'owner') {
+}) => {
+	const t = useTranslation();
+	return (
+		<div className="flex w-full min-w-0 flex-col gap-5 px-4 py-5">
+			{bulks.map((bulk) => {
+				if (bulk.kind === 'owner') {
+					return (
+						<OwnerBulk
+							key={bulk.section.id}
+							section={bulk.section}
+							editing={isEditing}
+							onChange={onChange}
+						/>
+					);
+				}
+				if (bulk.kind === 'tags') {
+					return (
+						<TagBulk
+							key={bulk.section.id}
+							section={bulk.section}
+							editing={isEditing}
+							onChange={onChange}
+						/>
+					);
+				}
 				return (
-					<OwnerBulk
-						key={bulk.section.id}
-						section={bulk.section}
-						editing={isEditing}
-						onChange={onChange}
-					/>
+					<PanelBlock key={bulk.title} title={t(bulk.title)}>
+						<ActivityBody bulk={bulk} />
+					</PanelBlock>
 				);
-			}
-			if (bulk.kind === 'tags') {
-				return (
-					<TagBulk
-						key={bulk.section.id}
-						section={bulk.section}
-						editing={isEditing}
-						onChange={onChange}
-					/>
-				);
-			}
-			return (
-				<PanelBlock key={bulk.title} title={bulk.title}>
-					<ActivityBody bulk={bulk} />
-				</PanelBlock>
-			);
-		})}
-	</div>
-);
+			})}
+		</div>
+	);
+};

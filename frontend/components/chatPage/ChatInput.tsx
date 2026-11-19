@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import {
 	useCallback,
 	useRef,
@@ -24,6 +25,7 @@ type ChatInputProps = {
 };
 
 export const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
+	const t = useTranslation();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	// Track whether the textarea currently has any non-whitespace text so the
 	// Send button can be disabled/greyed-out when there's nothing to send.
@@ -97,7 +99,7 @@ export const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
 				<textarea
 					ref={textareaRef}
 					rows={1}
-					placeholder="Ask a Question…"
+					placeholder={t('Ask a Question…')}
 					onInput={handleInput}
 					onKeyDown={handleKeyDown}
 					className="flex-1 resize-none rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-2.5 text-sm text-heading outline-none transition-colors placeholder:text-secondary focus:border-[#76b900] focus:ring-1 focus:ring-[#76b900] dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
@@ -111,7 +113,7 @@ export const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
 						iconOnly
 						type="button"
 						onClick={handleStop}
-						aria-label="Stop generation"
+						aria-label={t('Stop generation')}
 					>
 						<Icon name={IconName.Stop} className="h-4 w-4" />
 					</Button>
@@ -123,7 +125,7 @@ export const ChatInput = ({ onSend, onStop, isLoading }: ChatInputProps) => {
 						iconOnly
 						type="submit"
 						disabled={!hasText}
-						aria-label="Send message"
+						aria-label={t('Send message')}
 					>
 						<Icon name={IconName.Send} className="h-4 w-4" />
 					</Button>

@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /** Connector kinds supported in the new-connection wizard. */
+import type { Message } from '@/types/i18n';
+
 export enum ConnectionType {
 	DATABRICKS = 'databricks',
 	POSTGRESQL = 'postgresql',
@@ -52,8 +54,9 @@ export type ConnectionFieldKey =
 
 export type ConnectionField = {
 	key: ConnectionFieldKey;
-	label: string;
+	label: Message;
 	placeholder?: string;
+	placeholderMessage?: Message;
 	secret?: boolean;
 	/** Optional fields are not required to enable Test/Create. */
 	optional?: boolean;
@@ -68,7 +71,7 @@ export type ConnectionField = {
 	/** `accept` attribute for a file field. */
 	fileAccept?: string;
 	/** Helper text shown under the field. */
-	hint?: string;
+	hint?: Message;
 };
 
 /**
@@ -102,7 +105,7 @@ export const CONNECTION_FIELDS: Record<ConnectionType, ConnectionField[]> = {
 		{
 			key: 'schema',
 			label: 'Schema',
-			placeholder: 'Leave Empty to Choose from a List',
+			placeholderMessage: 'Leave Empty to Choose from a List',
 			hint: 'Ingest only this schema. The connection test verifies it exists, and the schema selection step is skipped. Leave empty to pick schemas from a list instead.',
 			optional: true,
 			testOnly: true,
@@ -222,7 +225,7 @@ export const CONNECTION_FIELDS: Record<ConnectionType, ConnectionField[]> = {
 		{
 			key: 'schema',
 			label: 'Schema',
-			placeholder: 'Leave Empty to Choose from a List',
+			placeholderMessage: 'Leave Empty to Choose from a List',
 			hint: 'Ingest only this schema. Leave empty to pick schemas from a list instead.',
 			optional: true,
 		},
@@ -276,14 +279,14 @@ export const COMMON_CONNECTION_FIELDS: ConnectionField[] = [
 	{
 		key: 'table_allow_regex',
 		label: 'Table Allowlist (Regex)',
-		placeholder: 'Leave Empty to Ingest Every Table',
+		placeholderMessage: 'Leave Empty to Ingest Every Table',
 		optional: true,
 		hint: 'Ingest only tables whose name matches. Unanchored and case-sensitive, so "fact_" matches "fact_sales"; anchor with ^ and $ for an exact name.',
 	},
 	{
 		key: 'table_deny_regex',
 		label: 'Table Denylist (Regex)',
-		placeholder: 'Leave Empty to Exclude Nothing',
+		placeholderMessage: 'Leave Empty to Exclude Nothing',
 		optional: true,
 		hint: 'Skip tables whose name matches, even if the allowlist also matches them. Use this for relations the warehouse lists but cannot actually read, such as a broken Distributed table or a Kafka queue.',
 	},

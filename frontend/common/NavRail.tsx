@@ -7,12 +7,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '@/contexts/LocaleContext';
+import type { Message } from '@/types/i18n';
 import { Icon, IconName } from '@/common/icons';
 
 type NavItem = {
 	icon: IconName;
 	href: string;
-	label: string;
+	label: Message;
 	adminOnly?: boolean;
 };
 
@@ -30,12 +32,16 @@ const navItems: NavItem[] = [
 ];
 
 export const NavRail = ({ isAdmin = false }: { isAdmin?: boolean }) => {
+	const t = useTranslation();
 	const pathname = usePathname();
 	const [isExpanded, setIsExpanded] = useState(false);
 	const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
 	return (
-		<nav className="relative h-full w-12 shrink-0 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+		<nav
+			aria-label={t('Main navigation')}
+			className="relative h-full w-12 shrink-0 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+		>
 			<div
 				onMouseEnter={() => setIsExpanded(true)}
 				onMouseLeave={() => setIsExpanded(false)}
@@ -49,13 +55,17 @@ export const NavRail = ({ isAdmin = false }: { isAdmin?: boolean }) => {
 					className={`flex flex-1 flex-col gap-2 ${isExpanded ? 'px-1.5' : 'items-center'}`}
 				>
 					{visibleItems.map((item) => {
-						const isActive = pathname.startsWith(item.href);
+						const isActive =
+							pathname === item.href || pathname.startsWith(`${item.href}/`);
+						const label = t(item.label);
 
 						return (
 							<Link
 								key={item.href}
 								href={item.href}
-								title={isExpanded ? undefined : item.label}
+								aria-label={label}
+								aria-current={isActive ? 'page' : undefined}
+								title={isExpanded ? undefined : label}
 								className={`flex h-9 shrink-0 items-center gap-3 rounded-lg transition-colors ${
 									isExpanded ? 'w-full px-2' : 'w-9 justify-center'
 								} ${
@@ -67,7 +77,7 @@ export const NavRail = ({ isAdmin = false }: { isAdmin?: boolean }) => {
 								<Icon name={item.icon} className="h-5 w-5 shrink-0" />
 								{isExpanded && (
 									<span className="truncate text-sm font-medium whitespace-nowrap">
-										{item.label}
+										{label}
 									</span>
 								)}
 							</Link>

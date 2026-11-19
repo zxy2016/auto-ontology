@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { Button } from '@/common/Button';
 import { Icon, IconName } from '@/common/icons';
@@ -34,13 +35,14 @@ export const FileUpload = ({
 	onChange,
 	accept,
 	disabled = false,
-	label = 'Click to upload',
+	label,
 	description,
 	validate,
 	onError,
-	'aria-label': ariaLabel = 'Upload a file',
+	'aria-label': ariaLabel,
 	className = '',
 }: FileUploadProps) => {
+	const t = useTranslation();
 	const [isDragOver, setIsDragOver] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,7 +101,7 @@ export const FileUpload = ({
 			onDragLeave={handleDragLeave}
 			onDrop={handleDrop}
 			aria-disabled={disabled || undefined}
-			aria-label={ariaLabel}
+			aria-label={ariaLabel ?? t('Upload a file')}
 			className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors focus-visible:ring-2 focus-visible:ring-[#76b900]/40 focus-visible:outline-none ${
 				disabled
 					? 'cursor-default border-zinc-200 opacity-60 dark:border-zinc-800'
@@ -126,7 +128,7 @@ export const FileUpload = ({
 							event.stopPropagation();
 							handleClear();
 						}}
-						aria-label="Remove selected file"
+						aria-label={t('Remove selected file')}
 					>
 						<Icon name={IconName.Close} className="h-3.5 w-3.5" />
 					</Button>
@@ -135,9 +137,9 @@ export const FileUpload = ({
 				<>
 					<p className="text-sm text-body dark:text-zinc-300">
 						<span className="font-medium text-[#5e9400] dark:text-[#a3d63a]">
-							{label}
+							{label ?? t('Click to upload')}
 						</span>{' '}
-						or drag and drop
+						{t('or drag and drop')}
 					</p>
 					{description ? <p className="text-xs text-secondary">{description}</p> : null}
 				</>

@@ -3,10 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Suspense } from 'react';
+import { getServerTranslation, translatedMetadata } from '@/lib/i18n/server';
 import { Icon, IconName } from '@/common/icons';
 import { TermsLoadingSkeleton, TermsView } from '@/components/termsPage';
 
-export default function TermsPage() {
+export const generateMetadata = () => translatedMetadata('Terms');
+
+export default async function TermsPage() {
+	const t = await getServerTranslation();
 	return (
 		<Suspense
 			fallback={
@@ -17,7 +21,7 @@ export default function TermsPage() {
 							className="h-5 w-5 text-body dark:text-zinc-300"
 						/>
 						<h1 className="text-lg font-semibold tracking-tight text-heading dark:text-zinc-100">
-							Terms
+							{t('Terms')}
 						</h1>
 					</header>
 					<div className="flex-1 px-6 py-6">

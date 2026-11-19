@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Button } from '@/common/Button';
 import { Size, ButtonTheme } from '@/enums/button';
 import { Icon, IconName } from '@/common/icons';
@@ -15,6 +16,7 @@ type ViewToggleProps = {
 };
 
 export const ViewToggle = ({ layer, onToggle }: ViewToggleProps) => {
+	const t = useTranslation();
 	const isSemantic = layer === ExplorationLayer.Semantic;
 
 	return (
@@ -27,7 +29,7 @@ export const ViewToggle = ({ layer, onToggle }: ViewToggleProps) => {
 			shadow
 		>
 			<Icon name={isSemantic ? IconName.Database : IconName.Terms} className="h-4 w-4" />
-			Switch to {isSemantic ? 'Data Objects' : 'Semantic Objects'}
+			{t('Switch to {1}', isSemantic ? t('Data Objects') : t('Semantic Objects'))}
 		</Button>
 	);
 };

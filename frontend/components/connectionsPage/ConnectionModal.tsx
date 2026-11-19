@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useMemo, useState } from 'react';
 import { connectionsApi } from '@/api/connections';
 import { ModalWithSteps, type StepperFooterAction } from '@/common/modal';
@@ -68,6 +69,7 @@ export const ConnectionModal = ({
 	onConfirm,
 	onCancel,
 }: ConnectionModalProps) => {
+	const t = useTranslation();
 	const editing = connection != null;
 
 	const [loading, setLoading] = useState(false);
@@ -121,8 +123,10 @@ export const ConnectionModal = ({
 	// already confirmed it exists, so there is nothing left to choose.
 	const explicitSchema = (values.schema ?? '').trim();
 
-	const steps = useMemo(() => {
-		const base = editing ? [CONNECT_STEP] : [TYPE_STEP, CONNECT_STEP];
+	const steps = useMemo<
+		readonly (typeof TYPE_STEP | typeof CONNECT_STEP | typeof SCHEMA_STEP)[]
+	>(() => {
+		const base = editing ? ([CONNECT_STEP] as const) : ([TYPE_STEP, CONNECT_STEP] as const);
 		return supportsSchemaSelection && !explicitSchema ? [...base, SCHEMA_STEP] : base;
 	}, [editing, supportsSchemaSelection, explicitSchema]);
 
@@ -224,26 +228,30 @@ export const ConnectionModal = ({
 
 		if ('error' in res && res.error) {
 			setIsConnectionTested(false);
-			setAlert(res.message ?? 'Connection test failed.');
+			setAlert(res.message ?? t('Connection test failed.'));
 			return;
 		}
 
 		if (!('success' in res)) {
 			setIsConnectionTested(false);
-			setAlert('Connection test failed.');
+			setAlert(t('Connection test failed.'));
 			return;
 		}
 
 		setIsConnectionTested(true);
-		setTestSuccessMessage('Connection successful.');
+		setTestSuccessMessage(t('Connection successful.'));
 		// The test response carries the connection's schemas — feed the picker.
 		setAvailableSchemas(res.schemas);
 		setAlert(null);
-	}, [buildConnection, connection]);
+	}, [buildConnection, connection, t]);
 
 	const handleSubmit = useCallback(async (): Promise<void> => {
 		if (!isConnectionTested) {
-			setAlert(`Connection must be tested before ${editing ? 'saving' : 'creating'}.`);
+			setAlert(
+				editing
+					? t('Test the connection before saving.')
+					: t('Test the connection before creating it.'),
+			);
 			return;
 		}
 
@@ -257,12 +265,17 @@ export const ConnectionModal = ({
 		setLoading(false);
 
 		if ('error' in res && res.error) {
-			setAlert(res.message ?? `Failed to ${editing ? 'update' : 'create'} the connection.`);
+			setAlert(
+				res.message ??
+					(editing
+						? t('Failed to update the connection.')
+						: t('Failed to create the connection.')),
+			);
 			return;
 		}
 
 		onConfirm();
-	}, [buildConnection, connection, editing, isConnectionTested, onConfirm]);
+	}, [buildConnection, connection, editing, isConnectionTested, onConfirm, t]);
 
 	const renderStepContent = (step: number) => {
 		switch (steps[step]) {
@@ -288,7 +301,7 @@ export const ConnectionModal = ({
 				return (
 					<div className="flex flex-col gap-2">
 						<p className="px-2 text-xs text-secondary dark:text-zinc-400">
-							Leave empty to ingest all schemas.
+							{t('Leave empty to ingest all schemas.')}
 						</p>
 						<ConnectionSelectDataStep
 							availableDatabases={availableSchemas}
@@ -304,13 +317,13 @@ export const ConnectionModal = ({
 
 	const footerActions: StepperFooterAction[] = useMemo(() => {
 		if (onTypeStep) {
-			return [{ label: 'Cancel', onClick: onCancel, variant: 'outline' }];
+			return [{ label: t('Cancel'), onClick: onCancel, variant: 'outline' }];
 		}
 
 		const actions: StepperFooterAction[] = [
 			activeStep === 0
-				? { label: 'Cancel', onClick: onCancel, variant: 'outline' }
-				: { label: 'Back', onClick: handleBack, variant: 'outline' },
+				? { label: t('Cancel'), onClick: onCancel, variant: 'outline' }
+				: { label: t('Back'), onClick: handleBack, variant: 'outline' },
 		];
 
 		const isLastStep = activeStep === steps.length - 1;
@@ -320,14 +333,14 @@ export const ConnectionModal = ({
 		actions.push(
 			isLastStep
 				? {
-						label: editing ? 'Save' : 'Create',
+						label: editing ? t('Save') : t('Create'),
 						onClick: () => {
 							void handleSubmit();
 						},
 						disabled: blocked,
 						loading,
 					}
-				: { label: 'Next', onClick: handleNext, disabled: blocked, loading },
+				: { label: t('Next'), onClick: handleNext, disabled: blocked, loading },
 		);
 
 		return actions;
@@ -344,14 +357,15 @@ export const ConnectionModal = ({
 		onTypeStep,
 		steps.length,
 		testingConnection,
+		t,
 	]);
 
 	return (
 		<ModalWithSteps
 			open={open}
 			onClose={onCancel}
-			title={editing ? `Edit ${connection.database_name}` : 'Create New Connection'}
-			steps={steps}
+			title={editing ? t('Edit {1}', connection.database_name) : t('Create New Connection')}
+			steps={steps.map((step) => t(step))}
 			activeStep={activeStep}
 			onActiveStepChange={setActiveStep}
 			footerActions={footerActions}

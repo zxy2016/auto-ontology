@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
 	SinglePageComposer,
@@ -60,6 +61,7 @@ export const SinglePageView = ({
 	hideEditToolbar,
 	headerActions,
 }: SinglePageViewProps): React.JSX.Element | null => {
+	const t = useTranslation();
 	const [loading, setLoading] = useState(true);
 	const [props, setProps] = useState<SinglePageFormat | null>(null);
 	const prevCoreRef = useRef<{
@@ -100,7 +102,7 @@ export const SinglePageView = ({
 
 	if (loading) {
 		return (
-			<div className="flex flex-1" role="status" aria-label="Loading details">
+			<div className="flex flex-1" role="status" aria-label={t('Loading details')}>
 				<SkeletonDetail />
 			</div>
 		);

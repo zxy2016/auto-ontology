@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -104,17 +105,20 @@ const LOADING_SKELETON_CLASSNAMES = [
 	'hidden [@media(min-height:960px)]:block',
 ] as const;
 
-export const TermsLoadingSkeleton = () => (
-	<div
-		className="flex min-h-[calc(100dvh-11rem)] flex-col gap-4"
-		role="status"
-		aria-label="Loading terms"
-	>
-		{LOADING_SKELETON_CLASSNAMES.map((className, index) => (
-			<SkeletonCard key={index} className={className} rows={4} />
-		))}
-	</div>
-);
+export const TermsLoadingSkeleton = () => {
+	const t = useTranslation();
+	return (
+		<div
+			className="flex min-h-[calc(100dvh-11rem)] flex-col gap-4"
+			role="status"
+			aria-label={t('Loading terms')}
+		>
+			{LOADING_SKELETON_CLASSNAMES.map((className, index) => (
+				<SkeletonCard key={index} className={className} rows={4} />
+			))}
+		</div>
+	);
+};
 
 const TermCard = ({
 	term,
@@ -125,6 +129,7 @@ const TermCard = ({
 	certificationStatus,
 	onClick,
 }: TermCardProps) => {
+	const t = useTranslation();
 	const tags = term.tags ?? [];
 	const shownTags = tags.slice(0, CARD_TAG_LIMIT);
 	const hiddenTagCount = tags.length - shownTags.length;
@@ -157,10 +162,10 @@ const TermCard = ({
 				<div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
 					<span className="inline-flex items-center gap-1 text-sm font-semibold text-heading dark:text-zinc-100">
 						<Icon name={IconName.Tag} className="h-4 w-4" />
-						Tags
+						{t('Tags')}
 					</span>
 					{shownTags.length === 0 ? (
-						<span className="text-sm text-[#B3B4B7]">None</span>
+						<span className="text-sm text-[#B3B4B7]">{t('None')}</span>
 					) : (
 						shownTags.map((tag) => <Label key={tag.id} label={tag.name} />)
 					)}
@@ -179,7 +184,7 @@ const TermCard = ({
 					<Text as="p" text={term.description} lines={3} variant={TextVariant.Body} />
 				) : (
 					<p className="text-sm italic text-secondary dark:text-zinc-500">
-						No Description Available
+						{t('No Description Available')}
 					</p>
 				)}
 			</div>
@@ -190,12 +195,12 @@ const TermCard = ({
 				<div className="border-r border-zinc-200 dark:border-zinc-700">
 					<div className="border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-700">
 						<span className="text-xs font-semibold text-secondary dark:text-zinc-400">
-							Column Attributes
+							{t('Column Attributes')}
 						</span>
 					</div>
 					<div className="flex items-center">
 						<span className="flex w-full items-center justify-between px-4 py-3 text-sm text-body dark:text-zinc-300">
-							<span>Column Attributes</span>
+							<span>{t('Column Attributes')}</span>
 							<span className="ml-1.5 font-medium text-heading dark:text-zinc-100">
 								{columnAttributeCount}
 							</span>
@@ -207,12 +212,12 @@ const TermCard = ({
 				<div className="border-r border-zinc-200 dark:border-zinc-700">
 					<div className="border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-700">
 						<span className="text-xs font-semibold text-secondary dark:text-zinc-400">
-							SQL Attributes
+							{t('SQL Attributes')}
 						</span>
 					</div>
 					<div className="flex items-center">
 						<span className="flex w-full items-center justify-between px-4 py-3 text-sm text-body dark:text-zinc-300">
-							<span>SQL Attributes</span>
+							<span>{t('SQL Attributes')}</span>
 							<span className="ml-1.5 font-medium text-heading dark:text-zinc-100">
 								{sqlAttributeCount}
 							</span>
@@ -224,11 +229,11 @@ const TermCard = ({
 				<div className="border-r border-zinc-200 dark:border-zinc-700">
 					<div className="border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-700">
 						<span className="text-xs font-semibold text-secondary dark:text-zinc-400">
-							Related Terms
+							{t('Related Terms')}
 						</span>
 					</div>
 					<div className="flex items-center justify-between px-4 py-3 text-sm text-body dark:text-zinc-300">
-						<span>Related Terms</span>
+						<span>{t('Related Terms')}</span>
 						<span className="font-medium text-heading dark:text-zinc-100">
 							{relatedCount}
 						</span>
@@ -239,7 +244,7 @@ const TermCard = ({
 				<div>
 					<div className="border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-700">
 						<span className="text-xs font-semibold text-secondary dark:text-zinc-400">
-							Zones
+							{t('Zones')}
 						</span>
 					</div>
 					<div className="flex flex-wrap items-center gap-1.5 px-4 py-3">
@@ -291,6 +296,7 @@ const FIELD_INPUT_CLASSNAME =
 const FIELD_LABEL_CLASSNAME = 'mb-1.5 block text-sm font-medium text-heading dark:text-zinc-100';
 
 export const TermsView = () => {
+	const t = useTranslation();
 	const router = useRouter();
 	// The tag picker's options come from the shared cache rather than a read of
 	// this page's own, so opening a term after a column attribute doesn't ask
@@ -507,12 +513,12 @@ export const TermsView = () => {
 		});
 		setSqlAttrValidating(false);
 		if (res.error) {
-			setSqlAttrValidationMessage(res.message ?? 'SQL validation failed');
+			setSqlAttrValidationMessage(res.message ?? t('SQL validation failed'));
 			return;
 		}
 		const isValid = res.data.valid === true;
 		setSqlAttrSqlValidated(isValid);
-		setSqlAttrValidationMessage(isValid ? 'SQL is valid.' : 'SQL validation failed');
+		setSqlAttrValidationMessage(isValid ? t('SQL is valid.') : t('SQL validation failed'));
 	};
 
 	const handleCreateSqlAttr = async () => {
@@ -528,7 +534,7 @@ export const TermsView = () => {
 		});
 		setSqlAttrSubmitting(false);
 		if (res.error) {
-			setSqlAttrSubmitError(res.message ?? 'Failed to create SQL attribute');
+			setSqlAttrSubmitError(res.message ?? t('Failed to create SQL attribute'));
 			return;
 		}
 		handleSqlAttrCreated(res.data);
@@ -549,7 +555,7 @@ export const TermsView = () => {
 		const res = await sqlAttributesApi.delete(deletingSqlAttr.id);
 		setDeletingSqlAttrBusy(false);
 		if (res.error) {
-			setDeleteSqlAttrError(res.message ?? 'Failed to delete SQL attribute');
+			setDeleteSqlAttrError(res.message ?? t('Failed to delete SQL attribute'));
 			return;
 		}
 		setSqlAttrs((prev) => prev.filter((attr) => attr.id !== deletingSqlAttr.id));
@@ -588,7 +594,7 @@ export const TermsView = () => {
 
 	const handleSqlAttrEditSave = async (payload: Record<string, ComposerEditValue>) => {
 		if (focusedSqlAttr == null || focusId == null) {
-			return { error: true, message: 'SQL attribute not found' };
+			return { error: true, message: t('SQL attribute not found') };
 		}
 		setSqlAttrEditError(null);
 		const description =
@@ -597,7 +603,7 @@ export const TermsView = () => {
 				: (focusedSqlAttr.description ?? '');
 		const name = typeof payload.name === 'string' ? payload.name.trim() : focusedSqlAttr.name;
 		if (!name) {
-			return { error: true, message: 'SQL attribute name cannot be blank' };
+			return { error: true, message: t('SQL attribute name cannot be blank') };
 		}
 
 		const patch: { name?: string; description?: string } = {};
@@ -615,7 +621,7 @@ export const TermsView = () => {
 		if (Object.keys(patch).length > 0) {
 			const res = await sqlAttributesApi.patch(focusedSqlAttr.id, patch);
 			if (res.error) {
-				return { error: true, message: res.message ?? 'Failed to update SQL attribute' };
+				return { error: true, message: res.message ?? t('Failed to update SQL attribute') };
 			}
 			setSqlAttrs((prev) =>
 				prev.map((attr) => (attr.id === focusedSqlAttr.id ? res.data : attr)),
@@ -650,7 +656,7 @@ export const TermsView = () => {
 
 	const handleColumnAttrEditSave = async (payload: Record<string, ComposerEditValue>) => {
 		if (focusedColAttr == null || focusId == null) {
-			return { error: true, message: 'Column attribute not found' };
+			return { error: true, message: t('Column attribute not found') };
 		}
 		setColumnAttrEditError(null);
 		const description =
@@ -660,7 +666,7 @@ export const TermsView = () => {
 		const name =
 			typeof payload.name === 'string' ? payload.name.trim() : focusedColAttr.name.trim();
 		if (!name) {
-			return { error: true, message: 'Column attribute name cannot be blank' };
+			return { error: true, message: t('Column attribute name cannot be blank') };
 		}
 		const sampleValues = Array.isArray(payload.sample_values)
 			? payload.sample_values.map((value) => String(value))
@@ -692,7 +698,10 @@ export const TermsView = () => {
 		if (Object.keys(patch).length > 0) {
 			const res = await termsApi.updateColumnAttribute(focusId, focusedColAttr.id, patch);
 			if (res.error) {
-				return { error: true, message: res.message ?? 'Failed to update column attribute' };
+				return {
+					error: true,
+					message: res.message ?? t('Failed to update column attribute'),
+				};
 			}
 			setColumnAttrs((prev) =>
 				prev.map((attr) =>
@@ -732,13 +741,13 @@ export const TermsView = () => {
 
 	const handleTermEditSave = async (payload: Record<string, ComposerEditValue>) => {
 		if (focusedTerm == null || focusId == null) {
-			return { error: true, message: 'Term not found' };
+			return { error: true, message: t('Term not found') };
 		}
 
 		const name =
 			typeof payload.name === 'string' ? payload.name.trim() : focusedTerm.name.trim();
 		if (!name) {
-			return { error: true, message: 'Term name cannot be blank' };
+			return { error: true, message: t('Term name cannot be blank') };
 		}
 
 		const description =
@@ -763,7 +772,7 @@ export const TermsView = () => {
 		if (Object.keys(patch).length > 0) {
 			const res = await termsApi.update(focusId, patch);
 			if (res.error) {
-				return { error: true, message: res.message ?? 'Failed to update term' };
+				return { error: true, message: res.message ?? t('Failed to update term') };
 			}
 			patchTerm(focusId, {
 				name: res.data.name,
@@ -810,7 +819,7 @@ export const TermsView = () => {
 			id === 'name' ? { name_certified: certified } : { description_certified: certified };
 		const res = await termsApi.update(focusId, payload);
 		if (res.error) {
-			setWriteError(res.message ?? 'Failed to update certification');
+			setWriteError(res.message ?? t('Failed to update certification'));
 			return;
 		}
 		setWriteError(null);
@@ -830,7 +839,7 @@ export const TermsView = () => {
 			certified,
 		});
 		if (res.error) {
-			setWriteError(res.message ?? 'Failed to update certification');
+			setWriteError(res.message ?? t('Failed to update certification'));
 			return;
 		}
 		setWriteError(null);
@@ -852,7 +861,7 @@ export const TermsView = () => {
 		if (focusedSqlAttr == null) return;
 		const res = await sqlAttributesApi.patch(focusedSqlAttr.id, { certified });
 		if (res.error) {
-			setWriteError(res.message ?? 'Failed to update certification');
+			setWriteError(res.message ?? t('Failed to update certification'));
 			return;
 		}
 		setWriteError(null);
@@ -875,7 +884,7 @@ export const TermsView = () => {
 			if (focusId == null) return;
 			const res = await termsApi.updateColumnAttribute(focusId, rowId, { certified });
 			if (res.error) {
-				setWriteError(res.message ?? 'Failed to update certification');
+				setWriteError(res.message ?? t('Failed to update certification'));
 				return;
 			}
 			setWriteError(null);
@@ -889,7 +898,7 @@ export const TermsView = () => {
 		} else if (sectionId === 'sql_attributes') {
 			const res = await sqlAttributesApi.patch(rowId, { certified });
 			if (res.error) {
-				setWriteError(res.message ?? 'Failed to update certification');
+				setWriteError(res.message ?? t('Failed to update certification'));
 				return;
 			}
 			setWriteError(null);
@@ -942,12 +951,12 @@ export const TermsView = () => {
 		});
 		setSqlEditValidating(false);
 		if (res.error) {
-			setSqlEditValidationMessage(res.message ?? 'SQL validation failed');
+			setSqlEditValidationMessage(res.message ?? t('SQL validation failed'));
 			return;
 		}
 		const isValid = res.data.valid === true;
 		setSqlEditValidated(isValid);
-		setSqlEditValidationMessage(isValid ? 'SQL is valid.' : 'SQL validation failed');
+		setSqlEditValidationMessage(isValid ? t('SQL is valid.') : t('SQL validation failed'));
 	};
 
 	const handleSaveSqlEdit = async () => {
@@ -963,7 +972,7 @@ export const TermsView = () => {
 		});
 		setSqlEditSubmitting(false);
 		if (res.error) {
-			setSqlEditError(res.message ?? 'Failed to save SQL');
+			setSqlEditError(res.message ?? t('Failed to save SQL'));
 			return;
 		}
 		resetSqlEditModal();
@@ -992,7 +1001,7 @@ export const TermsView = () => {
 			if (focusId == null) {
 				return {
 					sections: [],
-					header: { header: { title: 'Column Attribute Not Found' } },
+					header: { header: { title: t('Column Attribute Not Found') } },
 				};
 			}
 			// TODO: viewer zone-scoping handled in a separate PR — for now the
@@ -1009,7 +1018,7 @@ export const TermsView = () => {
 			if (attr == null) {
 				return {
 					sections: [],
-					header: { header: { title: 'Column Attribute Not Found' } },
+					header: { header: { title: t('Column Attribute Not Found') } },
 				};
 			}
 			setColumnAttrs(attrs);
@@ -1034,22 +1043,24 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.TEXT_CARD,
 						id: 'description',
-						title: 'Description',
+						title: t('Description'),
 						body: attr.description ?? '',
 						editable: true,
 					},
 					{
 						type: ComposerSectionKind.TAG_LIST,
 						id: 'sample_values',
-						title: 'Sample Values',
+						title: t('Sample Values'),
 						values: Array.isArray(attr.sample_values) ? attr.sample_values : [],
 						editable: samplesEditable,
-						hint: samplesEditable ? undefined : sampleValuesReadOnlyHint(attr.datatype),
+						hint: samplesEditable
+							? undefined
+							: sampleValuesReadOnlyHint(attr.datatype, t),
 					},
 					{
 						type: ComposerSectionKind.ZONES_CHIPS,
 						id: 'zones',
-						title: 'Zones',
+						title: t('Zones'),
 						zones: (attr.zones ?? []).map((zone) => ({
 							id: zone.id,
 							name: zone.name,
@@ -1061,7 +1072,7 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.ENTITY_CHIPS,
 						id: 'primary_column',
-						title: 'Primary Column',
+						title: t('Primary Column'),
 						entities: primaryColumn
 							? [
 									{
@@ -1080,7 +1091,7 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.ENTITY_CHIPS,
 						id: 'referenced_columns',
-						title: 'Referenced Columns',
+						title: t('Referenced Columns'),
 						entities: referencedColumns.map((col) => ({
 							id: col.id,
 							name: `${col.table_name}.${col.column_name}`,
@@ -1101,7 +1112,7 @@ export const TermsView = () => {
 				}),
 			};
 		},
-		[focusId, queryClient],
+		[focusId, queryClient, t],
 	);
 
 	const getSqlAttributeSinglePage = useCallback(
@@ -1114,7 +1125,7 @@ export const TermsView = () => {
 			if (res.error || !res.data) {
 				return {
 					sections: [],
-					header: { header: { title: 'SQL Attribute Not Found' } },
+					header: { header: { title: t('SQL Attribute Not Found') } },
 				};
 			}
 			const attr = res.data;
@@ -1144,7 +1155,7 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.TEXT_CARD,
 						id: 'description',
-						title: 'Description',
+						title: t('Description'),
 						body: attr.description ?? '',
 						editable: true,
 						suggestable: true,
@@ -1159,7 +1170,7 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.ZONES_CHIPS,
 						id: 'zones',
-						title: 'Zones',
+						title: t('Zones'),
 						zones: (attr.zones ?? []).map((z) => ({
 							id: z.id,
 							name: z.name,
@@ -1182,7 +1193,7 @@ export const TermsView = () => {
 				}),
 			};
 		},
-		[queryClient],
+		[queryClient, t],
 	);
 
 	const getSinglePage = useCallback(
@@ -1197,7 +1208,7 @@ export const TermsView = () => {
 			if (res.error || !res.data) {
 				return {
 					sections: [],
-					header: { header: { title: 'Term Not Found' } },
+					header: { header: { title: t('Term Not Found') } },
 				};
 			}
 			const term = res.data;
@@ -1232,7 +1243,7 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.TEXT_CARD,
 						id: 'description',
-						title: 'Description',
+						title: t('Description'),
 						body: term.description ?? '',
 						editable: true,
 						certification: { certified: term.description_certified },
@@ -1240,13 +1251,13 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.TAG_LIST,
 						id: 'synonyms',
-						title: 'Synonyms',
+						title: t('Synonyms'),
 						values: term.synonyms ?? [],
 					},
 					{
 						type: ComposerSectionKind.ENTITY_CHIPS,
 						id: 'entities',
-						title: 'Entities',
+						title: t('Entities'),
 						entities: (term.tables ?? []).map((table) => ({
 							id: table.id,
 							name: table.name,
@@ -1256,7 +1267,7 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.ZONES_CHIPS,
 						id: 'zones',
-						title: 'Zones',
+						title: t('Zones'),
 						zones: term.zones.map((z) => ({
 							id: z.id,
 							name: z.name,
@@ -1267,7 +1278,7 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.RELATED_TERMS_CHIPS,
 						id: 'related_terms',
-						title: 'Related Terms',
+						title: t('Related Terms'),
 						terms: relatedTerms.map((t) => ({
 							id: t.id,
 							name: t.name,
@@ -1276,15 +1287,15 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.DATA_TABLE,
 						id: 'column_attributes',
-						title: 'Column Attributes',
+						title: t('Column Attributes'),
 						rowIdKey: 'id',
 						layout: 'fixed',
 						columns: [
-							{ key: 'name', label: 'Attribute Name', width: 'w-1/3' },
-							{ key: 'description', label: 'Description', truncate: true },
+							{ key: 'name', label: t('Attribute Name'), width: 'w-1/3' },
+							{ key: 'description', label: t('Description'), truncate: true },
 							{
 								key: 'certification',
-								label: 'Certification',
+								label: t('Certification'),
 								type: ComposerColumnType.CERTIFICATION,
 								align: 'center',
 								width: 'w-44',
@@ -1300,15 +1311,15 @@ export const TermsView = () => {
 					{
 						type: ComposerSectionKind.DATA_TABLE,
 						id: 'sql_attributes',
-						title: 'SQL Attributes',
+						title: t('SQL Attributes'),
 						rowIdKey: 'id',
 						layout: 'fixed',
 						columns: [
-							{ key: 'name', label: 'Attribute Name', width: 'w-1/3' },
-							{ key: 'description', label: 'Description', truncate: true },
+							{ key: 'name', label: t('Attribute Name'), width: 'w-1/3' },
+							{ key: 'description', label: t('Description'), truncate: true },
 							{
 								key: 'certification',
-								label: 'Certification',
+								label: t('Certification'),
 								type: ComposerColumnType.CERTIFICATION,
 								align: 'center',
 								width: 'w-44',
@@ -1320,7 +1331,7 @@ export const TermsView = () => {
 							description: attr.description ?? '',
 							certification: attributeStatus(attr),
 						})),
-						emptyMessage: 'SQL Attribute Does Not Exist',
+						emptyMessage: t('SQL Attribute Does Not Exist'),
 					},
 				],
 				leftPanel: entitySidePanel({
@@ -1336,7 +1347,7 @@ export const TermsView = () => {
 				}),
 			};
 		},
-		[queryClient],
+		[queryClient, t],
 	);
 
 	const listedTerm = focusId != null ? (terms.find((t) => t.id === focusId) ?? null) : null;
@@ -1399,12 +1410,12 @@ export const TermsView = () => {
 												setSqlAttrEditError(null);
 												setSqlAttrEditing(true);
 											}}
-											aria-label={`Edit ${sqlAttrTitle}`}
-											title="Edit"
+											aria-label={t('Edit {1}', sqlAttrTitle)}
+											title={t('Edit')}
 											iconPosition="left"
 										>
 											<Icon name={IconName.Pencil} className="h-3.5 w-3.5" />
-											Edit
+											{t('Edit')}
 										</Button>
 										<Button
 											theme={ButtonTheme.DangerSubtle}
@@ -1417,12 +1428,12 @@ export const TermsView = () => {
 												});
 												setDeleteSqlAttrError(null);
 											}}
-											aria-label={`Delete ${sqlAttrTitle}`}
-											title="Delete"
+											aria-label={t('Delete {1}', sqlAttrTitle)}
+											title={t('Delete')}
 											iconPosition="left"
 										>
 											<Icon name={IconName.Trash} className="h-3.5 w-3.5" />
-											Delete
+											{t('Delete')}
 										</Button>
 									</>
 								)}
@@ -1466,7 +1477,7 @@ export const TermsView = () => {
 					open={deletingSqlAttr !== null}
 					onCancel={handleDeleteSqlAttrClose}
 					onConfirm={handleDeleteSqlAttrConfirm}
-					title="Delete SQL Attribute"
+					title={t('Delete SQL Attribute')}
 					message={[
 						'Are you sure you want to delete ',
 						<strong key="name">{deletingSqlAttr?.name}</strong>,
@@ -1478,12 +1489,12 @@ export const TermsView = () => {
 				<ModalCreateNewItem
 					open={sqlEditModalOpen}
 					onClose={handleSqlEditClose}
-					title="SQL Code"
-					submitLabel={sqlEditSubmitting ? 'Saving…' : 'Save'}
+					title={t('SQL Code')}
+					submitLabel={sqlEditSubmitting ? t('Saving…') : t('Save')}
 					onSubmit={handleSaveSqlEdit}
 					canSubmit={canSaveSqlEdit}
 					secondaryAction={{
-						label: sqlEditValidating ? 'Validating…' : 'Validate SQL',
+						label: sqlEditValidating ? t('Validating…') : t('Validate SQL'),
 						onClick: handleValidateSqlEdit,
 						disabled:
 							trimmedSqlEditValue.length === 0 ||
@@ -1494,7 +1505,7 @@ export const TermsView = () => {
 					<SqlEditor
 						value={sqlEditValue}
 						onChange={handleSqlEditChange}
-						label="SQL Code"
+						label={t('SQL Code')}
 						rows={10}
 					/>
 
@@ -1535,12 +1546,12 @@ export const TermsView = () => {
 											setColumnAttrEditError(null);
 											setColumnAttrEditing(true);
 										}}
-										aria-label={`Edit ${colAttrTitle}`}
-										title="Edit"
+										aria-label={t('Edit {1}', colAttrTitle)}
+										title={t('Edit')}
 										iconPosition="left"
 									>
 										<Icon name={IconName.Pencil} className="h-3.5 w-3.5" />
-										Edit
+										{t('Edit')}
 									</Button>
 								)}
 							</>
@@ -1593,7 +1604,7 @@ export const TermsView = () => {
 										iconPosition="left"
 									>
 										<Icon name={IconName.Pencil} className="h-3.5 w-3.5" />
-										Edit
+										{t('Edit')}
 									</Button>
 								)}
 								{canEditCatalog ? (
@@ -1606,7 +1617,7 @@ export const TermsView = () => {
 										shadow
 									>
 										<Icon name={IconName.Plus} className="h-4 w-4" />
-										Create New SQL Attribute
+										{t('Create New SQL Attribute')}
 									</Button>
 								) : null}
 							</>
@@ -1634,33 +1645,35 @@ export const TermsView = () => {
 				<ModalCreateNewItem
 					open={createSqlAttrModalOpen}
 					onClose={handleCreateSqlAttrClose}
-					title="Create New SQL Attribute"
-					submitLabel={sqlAttrSubmitting ? 'Creating…' : 'Create'}
+					title={t('Create New SQL Attribute')}
+					submitLabel={sqlAttrSubmitting ? t('Creating…') : t('Create')}
 					onSubmit={handleCreateSqlAttr}
 					canSubmit={canCreateSqlAttr}
 					secondaryAction={{
-						label: sqlAttrValidating ? 'Validating…' : 'Validate SQL',
+						label: sqlAttrValidating ? t('Validating…') : t('Validate SQL'),
 						onClick: handleValidateSqlAttrSql,
 						disabled: trimmedSqlAttrSql.length === 0 || sqlAttrValidating,
 					}}
 				>
 					<div>
-						<label className={FIELD_LABEL_CLASSNAME}>Attribute Name</label>
+						<label className={FIELD_LABEL_CLASSNAME}>{t('Attribute Name')}</label>
 						<input
 							type="text"
 							value={sqlAttrName}
 							onChange={(e) => setSqlAttrName(e.target.value)}
-							placeholder="Attribute Name"
+							placeholder={t('Attribute Name')}
 							className={FIELD_INPUT_CLASSNAME}
 						/>
 					</div>
 
 					<div>
-						<label className={FIELD_LABEL_CLASSNAME}>Description (Optional)</label>
+						<label className={FIELD_LABEL_CLASSNAME}>
+							{t('Description (Optional)')}
+						</label>
 						<textarea
 							value={sqlAttrDescription}
 							onChange={(e) => setSqlAttrDescription(e.target.value)}
-							placeholder="Add Description"
+							placeholder={t('Add Description')}
 							rows={3}
 							className={`resize-y ${FIELD_INPUT_CLASSNAME}`}
 						/>
@@ -1691,7 +1704,7 @@ export const TermsView = () => {
 			<header className="flex items-center gap-3 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
 				<Icon name={IconName.Terms} className="h-5 w-5 text-body dark:text-zinc-300" />
 				<h1 className="text-lg font-semibold tracking-tight text-heading dark:text-zinc-100">
-					Terms
+					{t('Terms')}
 				</h1>
 			</header>
 
@@ -1709,8 +1722,8 @@ export const TermsView = () => {
 					<SearchInput
 						value={searchQuery}
 						onChange={setSearchQuery}
-						placeholder="Search Terms…"
-						aria-label="Search terms"
+						placeholder={t('Search Terms…')}
+						aria-label={t('Search terms')}
 						className="mb-6 w-full"
 					/>
 				)}
@@ -1720,7 +1733,7 @@ export const TermsView = () => {
 				{!loading && error != null && terms.length === 0 && (
 					<div className="mx-auto max-w-lg rounded-2xl border border-red-200/80 bg-white/90 px-8 py-10 text-center shadow-xl shadow-red-100/50 dark:border-red-900/50 dark:bg-zinc-950/80 dark:shadow-none">
 						<h2 className="text-lg font-semibold tracking-tight text-red-800 dark:text-red-300">
-							Couldn&apos;t load terms
+							{t("Couldn't load terms")}
 						</h2>
 						<pre className="mt-4 max-w-full overflow-x-auto rounded-lg border border-red-100 bg-red-50/80 p-3 text-left text-xs text-red-900/80 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
 							{error}
@@ -1735,7 +1748,7 @@ export const TermsView = () => {
 								type="button"
 								onClick={reloadTerms}
 							>
-								Retry
+								{t('Retry')}
 							</Button>
 						</div>
 					</div>
@@ -1746,8 +1759,8 @@ export const TermsView = () => {
 						illustration={<Placeholders.NoTerms />}
 						title={
 							debouncedSearchQuery
-								? 'No Terms Match Your Search'
-								: 'No Terms Created Yet'
+								? t('No Terms Match Your Search')
+								: t('No Terms Created Yet')
 						}
 					/>
 				)}

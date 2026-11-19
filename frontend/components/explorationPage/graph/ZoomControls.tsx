@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useState } from 'react';
 import type { GraphController } from '@/components/explorationPage/graph/GraphCanvas';
 import { Button } from '@/common/Button';
@@ -14,6 +15,7 @@ type ZoomControlsProps = {
 };
 
 export const ZoomControls = ({ controller }: ZoomControlsProps) => {
+	const t = useTranslation();
 	const [zoom, setZoom] = useState(1);
 
 	useEffect(() => {
@@ -61,7 +63,7 @@ export const ZoomControls = ({ controller }: ZoomControlsProps) => {
 					iconOnly
 					type="button"
 					onClick={zoomOut}
-					aria-label="Zoom out"
+					aria-label={t('Zoom out')}
 				>
 					−
 				</Button>
@@ -74,7 +76,7 @@ export const ZoomControls = ({ controller }: ZoomControlsProps) => {
 					iconOnly
 					type="button"
 					onClick={zoomIn}
-					aria-label="Zoom in"
+					aria-label={t('Zoom in')}
 				>
 					+
 				</Button>
@@ -86,8 +88,8 @@ export const ZoomControls = ({ controller }: ZoomControlsProps) => {
 					iconOnly
 					type="button"
 					onClick={resetView}
-					aria-label="Reset View to Initial Position"
-					title="Reset View to Initial Position"
+					aria-label={t('Reset View to Initial Position')}
+					title={t('Reset View to Initial Position')}
 				>
 					<svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor">
 						<path

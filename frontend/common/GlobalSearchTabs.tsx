@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Icon, IconName } from '@/common/icons';
 import {
 	SEARCH_TYPE_ICON,
@@ -44,6 +45,7 @@ export const GlobalSearchTabsSkeleton = () => (
 );
 
 export const GlobalSearchTabs = ({ counts, selected, onSelect }: GlobalSearchTabsProps) => {
+	const t = useTranslation();
 	const allCount = totalGlobalSearchCount(counts);
 	const typeTabs = SEARCH_TYPE_TAB_ORDER.filter((type) => (counts[type] ?? 0) > 0);
 
@@ -52,7 +54,7 @@ export const GlobalSearchTabs = ({ counts, selected, onSelect }: GlobalSearchTab
 	return (
 		<div
 			role="tablist"
-			aria-label="Search result types"
+			aria-label={t('Search result types')}
 			className="flex flex-wrap gap-2 px-2 pb-2"
 		>
 			<button
@@ -63,7 +65,7 @@ export const GlobalSearchTabs = ({ counts, selected, onSelect }: GlobalSearchTab
 				className={tabClass(selected === GLOBAL_SEARCH_ALL_TAB)}
 			>
 				<Icon name={IconName.Exploration} className="h-3.5 w-3.5 shrink-0" />
-				<span className="text-sm font-medium">All</span>
+				<span className="text-sm font-medium">{t('All')}</span>
 				<span className="text-sm font-normal">{allCount.toLocaleString()}</span>
 			</button>
 			{typeTabs.map((type) => {
@@ -78,7 +80,9 @@ export const GlobalSearchTabs = ({ counts, selected, onSelect }: GlobalSearchTab
 						className={tabClass(isSelected)}
 					>
 						<Icon name={SEARCH_TYPE_ICON[type]} className="h-3.5 w-3.5 shrink-0" />
-						<span className="text-sm font-medium">{SEARCH_TYPE_TAB_LABEL[type]}</span>
+						<span className="text-sm font-medium">
+							{t(SEARCH_TYPE_TAB_LABEL[type])}
+						</span>
 						<span className="text-sm font-normal">
 							{(counts[type] ?? 0).toLocaleString()}
 						</span>

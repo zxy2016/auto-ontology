@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback } from 'react';
 
 import { termsApi } from '@/api/terms';
@@ -34,10 +35,13 @@ type SqlAttributesModalProps = {
 // The caller constrains the width; `Text` clips to one line and
 // reveals the full text in a popover on hover.
 const TruncatedDescription = ({ text }: { text: string | null }) => {
+	const t = useTranslation();
 	const value = text?.trim() ?? '';
 
 	if (value === '') {
-		return <span className="italic text-secondary dark:text-zinc-500">No Description</span>;
+		return (
+			<span className="italic text-secondary dark:text-zinc-500">{t('No Description')}</span>
+		);
 	}
 
 	return <Text text={value} />;
@@ -45,6 +49,7 @@ const TruncatedDescription = ({ text }: { text: string | null }) => {
 
 /** Generic modal listing a Term's SQL Attributes. Reusable from any page that has a term id. */
 export const SqlAttributesModal = ({ term, onClose }: SqlAttributesModalProps) => {
+	const t = useTranslation();
 	const termId = term?.id ?? null;
 
 	const fetchPage = useCallback(
@@ -81,7 +86,8 @@ export const SqlAttributesModal = ({ term, onClose }: SqlAttributesModalProps) =
 						className="h-5 w-5 shrink-0 text-body dark:text-zinc-300"
 					/>
 					<Text as="h2" variant={TextVariant.Heading}>
-						{term?.name} — SQL Attributes ({total})
+						{term?.name} {t('— SQL Attributes (')}
+						{total})
 					</Text>
 				</div>
 				<Button
@@ -90,7 +96,7 @@ export const SqlAttributesModal = ({ term, onClose }: SqlAttributesModalProps) =
 					iconOnly
 					type="button"
 					onClick={onClose}
-					aria-label="Close SQL attributes"
+					aria-label={t('Close SQL attributes')}
 				>
 					<Icon name={IconName.Close} className="h-4 w-4" />
 				</Button>
@@ -106,13 +112,13 @@ export const SqlAttributesModal = ({ term, onClose }: SqlAttributesModalProps) =
 				error={attributes.length > 0 ? error : null}
 			>
 				{loading ? (
-					<div role="status" aria-label="Loading SQL attributes">
+					<div role="status" aria-label={t('Loading SQL attributes')}>
 						<SkeletonSqlBlocks withHeading />
 					</div>
 				) : error != null && attributes.length === 0 ? (
 					<p className="text-sm text-red-600 dark:text-red-300">{error}</p>
 				) : attributes.length === 0 ? (
-					<EmptyState variant={EmptyStateVariant.Inline} title="No SQL Attributes" />
+					<EmptyState variant={EmptyStateVariant.Inline} title={t('No SQL Attributes')} />
 				) : (
 					<ul className="space-y-4">
 						{attributes.map((attr) => (

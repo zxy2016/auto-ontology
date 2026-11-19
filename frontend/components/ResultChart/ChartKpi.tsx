@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import type { FC } from 'react';
 import type { ChartKpi } from './types';
 
@@ -27,14 +28,17 @@ export const ChartKpiCard: FC<{ kpis: ChartKpi[]; title?: string; subtitle?: str
 	kpis,
 	title,
 	subtitle,
-}) => (
-	<figure className="result-chart result-chart--kpi-only" aria-label={title ?? 'Result'}>
-		<KpiTiles kpis={kpis} />
-		{title && (
-			<figcaption className="result-chart-head">
-				<span className="result-chart-title">{title}</span>
-				{subtitle && <span className="result-chart-sub">{subtitle}</span>}
-			</figcaption>
-		)}
-	</figure>
-);
+}) => {
+	const t = useTranslation();
+	return (
+		<figure className="result-chart result-chart--kpi-only" aria-label={title ?? t('Result')}>
+			<KpiTiles kpis={kpis} />
+			{title && (
+				<figcaption className="result-chart-head">
+					<span className="result-chart-title">{title}</span>
+					{subtitle && <span className="result-chart-sub">{subtitle}</span>}
+				</figcaption>
+			)}
+		</figure>
+	);
+};

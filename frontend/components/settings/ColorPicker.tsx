@@ -4,13 +4,15 @@
 
 'use client';
 
+import type { Message } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Popover } from '@/common/Popover';
 import { ColorSwatch } from '@/components/settings/ColorSwatch';
 import { Size } from '@/enums/button';
 
 export type ColorOption = {
 	value: string;
-	label: string;
+	label: Message;
 	colorClass: string;
 };
 
@@ -27,6 +29,7 @@ export const ColorPicker = ({
 	onChange,
 	fallbackColorClass = 'bg-zinc-400',
 }: ColorPickerProps) => {
+	const t = useTranslation();
 	const selectedColorClass =
 		colors.find((color) => color.value === value)?.colorClass ?? fallbackColorClass;
 
@@ -39,8 +42,8 @@ export const ColorPicker = ({
 					colorClass={selectedColorClass}
 					size={Size.LARGE}
 					onClick={toggle}
-					aria-label="Pick Color"
-					title="Pick Color"
+					aria-label={t('Pick Color')}
+					title={t('Pick Color')}
 				/>
 			)}
 		>
@@ -55,8 +58,8 @@ export const ColorPicker = ({
 								onChange(color.value);
 								close();
 							}}
-							title={color.label}
-							aria-label={`Color ${color.label}`}
+							title={t(color.label)}
+							aria-label={t('Color {1}', t(color.label))}
 						/>
 					))}
 				</div>

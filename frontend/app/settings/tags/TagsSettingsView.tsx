@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Translate } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -51,8 +53,8 @@ type NameDialog = { mode: 'create' } | { mode: 'rename'; tag: Tag };
  * untouched tag has them byte-identical and no date parsing is needed to tell.
  * Rendering the creation date twice would read as an edit that never happened.
  */
-const modifiedLabel = (tag: Tag): string =>
-	tag.modified === tag.created ? 'Never' : formatDate(tag.modified);
+const modifiedLabel = (tag: Tag, t: Translate): string =>
+	tag.modified === tag.created ? t('Never') : formatDate(tag.modified);
 
 /**
  * Every cell keeps its content on a 20px line — the height of an author avatar
@@ -73,7 +75,8 @@ const CELL_LINE = 'text-xs leading-5 text-secondary dark:text-zinc-400';
  */
 const TagAuthorCell = ({ author }: { author: TagAuthor | null | undefined }) => {
 	const name = author?.name || author?.email || '';
-	const label = name || AUTO_GENERATED_LABEL;
+	const t = useTranslation();
+	const label = name || t(AUTO_GENERATED_LABEL);
 
 	return (
 		<span className="flex min-w-0 items-center gap-2">
@@ -89,6 +92,7 @@ const TagAuthorCell = ({ author }: { author: TagAuthor | null | undefined }) => 
 };
 
 const TagsList = () => {
+	const t = useTranslation();
 	const router = useRouter();
 	// This page is the only one that writes the vocabulary, and every picker in
 	// the app reads it. Each write below tells the cache so, which is what
@@ -183,7 +187,10 @@ const TagsList = () => {
 		setSubmitting(false);
 
 		if (response.error) {
-			setSubmitError(response.message ?? `Failed to ${creating ? 'create' : 'rename'} tag.`);
+			setSubmitError(
+				response.message ??
+					(creating ? t('Failed to create tag.') : t('Failed to rename tag.')),
+			);
 			return;
 		}
 
@@ -217,7 +224,7 @@ const TagsList = () => {
 		setDeleting(false);
 
 		if (response.error) {
-			setDeleteError(response.message ?? 'Failed to delete tag.');
+			setDeleteError(response.message ?? t('Failed to delete tag.'));
 			return;
 		}
 
@@ -238,7 +245,7 @@ const TagsList = () => {
 	const columns: TableColumn<Tag>[] = [
 		{
 			key: 'name',
-			header: 'Name',
+			header: t('Name'),
 			// A real link rather than the row's click handler alone: it keeps
 			// middle-click and "open in new tab" on the tag's name. The row stays
 			// clickable too, so the whole width still opens the tag.
@@ -260,13 +267,13 @@ const TagsList = () => {
 		},
 		{
 			key: 'created_by',
-			header: 'Created By',
+			header: t('Created By'),
 			width: 'w-40',
 			cell: (tag) => <TagAuthorCell author={tag.created_by_user} />,
 		},
 		{
 			key: 'created',
-			header: 'Created Date',
+			header: t('Created Date'),
 			width: 'w-32',
 			nowrap: true,
 			headerClassName: 'text-right',
@@ -275,7 +282,7 @@ const TagsList = () => {
 		},
 		{
 			key: 'modified_by',
-			header: 'Modified By',
+			header: t('Modified By'),
 			width: 'w-40',
 			// Blank rather than an author for a tag nothing has edited: there is no
 			// editor at all, which is the same thing the date column says as "Never".
@@ -286,16 +293,16 @@ const TagsList = () => {
 		},
 		{
 			key: 'modified',
-			header: 'Modified Date',
+			header: t('Modified Date'),
 			width: 'w-32',
 			nowrap: true,
 			headerClassName: 'text-right',
 			className: `text-right ${CELL_LINE}`,
-			cell: (tag) => modifiedLabel(tag),
+			cell: (tag) => modifiedLabel(tag, t),
 		},
 		{
 			key: 'actions',
-			header: 'Actions',
+			header: t('Actions'),
 			width: 'w-20',
 			nowrap: true,
 			headerClassName: 'text-right',
@@ -310,12 +317,12 @@ const TagsList = () => {
 						<PopoverMenu
 							items={[
 								{
-									label: 'Rename Tag',
+									label: t('Rename Tag'),
 									icon: <Icon name={IconName.Pencil} className="h-3.5 w-3.5" />,
 									onClick: () => openRenameModal(tag),
 								},
 								{
-									label: 'Delete Tag',
+									label: t('Delete Tag'),
 									icon: <Icon name={IconName.Trash} className="h-3.5 w-3.5" />,
 									onClick: () => handleRequestDelete(tag),
 									danger: true,
@@ -328,7 +335,7 @@ const TagsList = () => {
 									iconOnly
 									type="button"
 									onClick={toggle}
-									aria-label={`Actions for ${tag.name}`}
+									aria-label={t('Actions for {1}', tag.name)}
 								>
 									<Icon name={IconName.DotsVertical} className="h-4 w-4" />
 								</Button>
@@ -353,7 +360,7 @@ const TagsList = () => {
 				<div className="w-full space-y-5">
 					<div className="flex items-center gap-3">
 						<h1 className="text-base font-semibold text-heading dark:text-zinc-100">
-							Tags
+							{t('Tags')}
 						</h1>
 						{tags.length > 0 || searching ? (
 							<div className="ml-auto">
@@ -366,7 +373,7 @@ const TagsList = () => {
 									shadow
 								>
 									<Icon name={IconName.Plus} className="h-4 w-4" />
-									Create New Tag
+									{t('Create New Tag')}
 								</Button>
 							</div>
 						) : null}
@@ -382,8 +389,8 @@ const TagsList = () => {
 						<SearchInput
 							value={query}
 							onChange={setQuery}
-							placeholder="Search Tags…"
-							aria-label="Search tags"
+							placeholder={t('Search Tags…')}
+							aria-label={t('Search tags')}
 							className="w-full"
 						/>
 					) : null}
@@ -395,7 +402,7 @@ const TagsList = () => {
 					) : null}
 
 					{loading ? (
-						<div className="py-2" role="status" aria-label="Loading tags">
+						<div className="py-2" role="status" aria-label={t('Loading tags')}>
 							<SkeletonRows rows={4} />
 						</div>
 					) : tags.length > 0 ? (
@@ -417,17 +424,19 @@ const TagsList = () => {
 						<EmptyState
 							variant={EmptyStateVariant.Inline}
 							icon={IconName.Tag}
-							title={searching ? 'No Tags Match Your Search' : 'No Tags Yet'}
+							title={searching ? t('No Tags Match Your Search') : 'No Tags Yet'}
 							description={
 								searching
 									? undefined
-									: 'Tags label catalog items so they can be found and governed together.'
+									: t(
+											'Tags label catalog items so they can be found and governed together.',
+										)
 							}
 							action={
 								searching
 									? undefined
 									: {
-											label: 'Create New Tag',
+											label: t('Create New Tag'),
 											icon: IconName.Plus,
 											onClick: openCreateModal,
 										}
@@ -441,8 +450,8 @@ const TagsList = () => {
 			<ModalCreateNewItem
 				open={dialog !== null}
 				onClose={closeDialog}
-				title={renaming == null ? 'Create New Tag' : 'Rename Tag'}
-				submitLabel={renaming == null ? 'Create' : 'Save'}
+				title={renaming == null ? t('Create New Tag') : t('Rename Tag')}
+				submitLabel={renaming == null ? t('Create') : t('Save')}
 				canSubmit={canSubmit}
 				onSubmit={handleSubmit}
 				className="w-[520px] max-w-full"
@@ -456,9 +465,9 @@ const TagsList = () => {
 							name={IconName.Tag}
 							className="h-4 w-4 text-secondary dark:text-zinc-400"
 						/>
-						Tag Name
+						{t('Tag Name')}
 						<span className="font-normal text-secondary dark:text-zinc-500">
-							(Max. {MAX_TAG_NAME_LENGTH})
+							{t('(Max. {1})', MAX_TAG_NAME_LENGTH)}
 						</span>
 					</label>
 					<input
@@ -473,7 +482,7 @@ const TagsList = () => {
 							// makes it stale rather than helpful.
 							setSubmitError(null);
 						}}
-						placeholder="Type Tag Name"
+						placeholder={t('Type Tag Name')}
 						className={`w-full rounded-lg border bg-white px-3 py-2 text-sm text-body outline-none transition-colors placeholder:text-secondary dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-500 ${submitError == null ? 'border-zinc-300 focus:border-[#76b900] focus:ring-2 focus:ring-[#76b900]/30 dark:border-zinc-600' : 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 dark:border-red-500 dark:focus:border-red-400 dark:focus:ring-red-400/30'}`}
 					/>
 				</div>
@@ -491,11 +500,14 @@ const TagsList = () => {
 
 			<ConfirmModal
 				open={confirmDeleteTag !== null}
-				title="Delete Tag"
+				title={t('Delete Tag')}
 				message={
 					confirmDeleteTag == null
 						? ''
-						: `Are you sure you want to delete "${confirmDeleteTag.name}"? This action cannot be undone.`
+						: t(
+								'Are you sure you want to delete "{1}"? This action cannot be undone.',
+								confirmDeleteTag.name,
+							)
 				}
 				onConfirm={handleConfirmDelete}
 				onCancel={handleCancelDelete}
@@ -507,16 +519,21 @@ const TagsList = () => {
 };
 
 /** The panel while the boundary above resolves, so the Suspense fallback matches. */
-export const TagsSettingsSkeleton = () => (
-	<main className={TAGS_PANEL_CLASSNAME}>
-		<div className={`w-full space-y-5 ${TAGS_PANEL_PADDING}`}>
-			<h1 className="text-base font-semibold text-heading dark:text-zinc-100">Tags</h1>
-			<div className="py-2" role="status" aria-label="Loading tags">
-				<SkeletonRows rows={4} />
+export const TagsSettingsSkeleton = () => {
+	const t = useTranslation();
+	return (
+		<main className={TAGS_PANEL_CLASSNAME}>
+			<div className={`w-full space-y-5 ${TAGS_PANEL_PADDING}`}>
+				<h1 className="text-base font-semibold text-heading dark:text-zinc-100">
+					{t('Tags')}
+				</h1>
+				<div className="py-2" role="status" aria-label={t('Loading tags')}>
+					<SkeletonRows rows={4} />
+				</div>
 			</div>
-		</div>
-	</main>
-);
+		</main>
+	);
+};
 
 /**
  * The Tags settings screen: the list, or one tag named by `?focus=`.

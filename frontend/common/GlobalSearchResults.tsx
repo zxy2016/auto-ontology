@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { CertificationBadge } from '@/common/CertificationBadge';
@@ -210,92 +211,102 @@ export const GlobalSearchResults = ({
 	query,
 	descriptionSearched,
 	onNavigate,
-}: GlobalSearchResultsProps) => (
-	<ul className="flex flex-col gap-2 p-3">
-		{items.map((item) => {
-			const status = certificationStatus(item.certified);
-			const kind = searchObjectTypeFromHit(item);
-			const isAttributeCard =
-				kind === SearchObjectType.Attribute || kind === SearchObjectType.SqlAttribute;
-			const termName = isAttributeCard ? parentTermName(item) : null;
-			const path = isAttributeCard
-				? ''
-				: item.breadcrumbs.map((crumb) => crumb.name).join(' / ');
-			const href = hrefForGlobalSearchItem(item);
-			const typeIcon = SEARCH_TYPE_ICON[kind] ?? IconName.Table;
-			const typeLabel = SEARCH_TYPE_LABEL[kind] ?? kind;
+}: GlobalSearchResultsProps) => {
+	const t = useTranslation();
+	return (
+		<ul className="flex flex-col gap-2 p-3">
+			{items.map((item) => {
+				const status = certificationStatus(item.certified);
+				const kind = searchObjectTypeFromHit(item);
+				const isAttributeCard =
+					kind === SearchObjectType.Attribute || kind === SearchObjectType.SqlAttribute;
+				const termName = isAttributeCard ? parentTermName(item) : null;
+				const path = isAttributeCard
+					? ''
+					: item.breadcrumbs.map((crumb) => crumb.name).join(' / ');
+				const href = hrefForGlobalSearchItem(item);
+				const typeIcon = SEARCH_TYPE_ICON[kind] ?? IconName.Table;
+				const typeLabel = t(SEARCH_TYPE_LABEL[kind]);
 
-			return (
-				<li key={`${item.type}:${item.id}`}>
-					<Link
-						href={href}
-						onClick={onNavigate}
-						className="flex min-w-0 cursor-pointer flex-col gap-1.5 overflow-hidden rounded-xl border border-zinc-200 bg-white px-3 py-2.5 select-none [&_*]:cursor-pointer transition-colors hover:border-[#76b900]/50 hover:bg-[#76b900]/5 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-[#76b900]/40 dark:hover:bg-[#76b900]/10"
-					>
-						<div className="flex min-w-0 items-center gap-2 overflow-hidden">
-							<Icon name={typeIcon} className="h-4 w-4 shrink-0 text-secondary" />
-							<span className="min-w-0 truncate text-sm font-medium text-heading dark:text-zinc-100">
-								<HighlightedText text={item.name ?? item.id} query={query} />
-							</span>
-							{/* The whole card is one link, and the badge's name folds
+				return (
+					<li key={`${item.type}:${item.id}`}>
+						<Link
+							href={href}
+							onClick={onNavigate}
+							className="flex min-w-0 cursor-pointer flex-col gap-1.5 overflow-hidden rounded-xl border border-zinc-200 bg-white px-3 py-2.5 select-none [&_*]:cursor-pointer transition-colors hover:border-[#76b900]/50 hover:bg-[#76b900]/5 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-[#76b900]/40 dark:hover:bg-[#76b900]/10"
+						>
+							<div className="flex min-w-0 items-center gap-2 overflow-hidden">
+								<Icon name={typeIcon} className="h-4 w-4 shrink-0 text-secondary" />
+								<span className="min-w-0 truncate text-sm font-medium text-heading dark:text-zinc-100">
+									<HighlightedText text={item.name ?? item.id} query={query} />
+								</span>
+								{/* The whole card is one link, and the badge's name folds
 							    into it, so the badge does not take focus of its own. */}
-							{status != null && (
-								<CertificationBadge status={status} iconOnly focusable={false} />
-							)}
-							<span className="ml-auto shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-body dark:bg-zinc-800 dark:text-zinc-300">
-								{typeLabel}
-							</span>
-						</div>
-						{item.synonyms && item.synonyms.length > 0 ? (
-							<p className="min-w-0 truncate pl-6 text-xs text-secondary dark:text-zinc-400">
-								<span className="text-secondary dark:text-zinc-500">
-									Synonyms:{' '}
-								</span>
-								{item.synonyms.map((synonym, index) => (
-									<span key={`${item.id}-${synonym}`}>
-										{index > 0 ? ', ' : null}
-										<HighlightedWholeWords text={synonym} query={query} />
-									</span>
-								))}
-							</p>
-						) : null}
-						{item.description ? (
-							<p className="line-clamp-2 min-w-0 overflow-hidden pl-6 text-xs leading-5 text-secondary dark:text-zinc-500">
-								{descriptionSearched ? (
-									<HighlightedText
-										text={descriptionWithVisibleMatch(item.description, query)}
-										query={query}
+								{status != null && (
+									<CertificationBadge
+										status={status}
+										iconOnly
+										focusable={false}
 									/>
-								) : (
-									// Shown from its start, not wound forward to a
-									// match: the eliding only earns its "..." by
-									// revealing why the row is here, and here it
-									// would skip the opening line to land on a word
-									// nothing was looking for.
-									item.description
 								)}
-							</p>
-						) : null}
-						{path !== '' && (
-							<p className="truncate pl-6 text-xs text-secondary dark:text-zinc-400">
-								{path}
-							</p>
-						)}
-						{termName != null ? (
-							<p className="flex min-w-0 items-center gap-1.5 pl-6 text-xs text-secondary dark:text-zinc-400">
-								<Icon
-									name={SEARCH_TYPE_ICON[SearchObjectType.Term]}
-									className="h-3.5 w-3.5 shrink-0 text-secondary"
-								/>
-								<span className="shrink-0 text-secondary dark:text-zinc-500">
-									Term:{' '}
+								<span className="ml-auto shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-body dark:bg-zinc-800 dark:text-zinc-300">
+									{typeLabel}
 								</span>
-								<span className="min-w-0 truncate">{termName}</span>
-							</p>
-						) : null}
-					</Link>
-				</li>
-			);
-		})}
-	</ul>
-);
+							</div>
+							{item.synonyms && item.synonyms.length > 0 ? (
+								<p className="min-w-0 truncate pl-6 text-xs text-secondary dark:text-zinc-400">
+									<span className="text-secondary dark:text-zinc-500">
+										{t('Synonyms:')}{' '}
+									</span>
+									{item.synonyms.map((synonym, index) => (
+										<span key={`${item.id}-${synonym}`}>
+											{index > 0 ? ', ' : null}
+											<HighlightedWholeWords text={synonym} query={query} />
+										</span>
+									))}
+								</p>
+							) : null}
+							{item.description ? (
+								<p className="line-clamp-2 min-w-0 overflow-hidden pl-6 text-xs leading-5 text-secondary dark:text-zinc-500">
+									{descriptionSearched ? (
+										<HighlightedText
+											text={descriptionWithVisibleMatch(
+												item.description,
+												query,
+											)}
+											query={query}
+										/>
+									) : (
+										// Shown from its start, not wound forward to a
+										// match: the eliding only earns its "..." by
+										// revealing why the row is here, and here it
+										// would skip the opening line to land on a word
+										// nothing was looking for.
+										item.description
+									)}
+								</p>
+							) : null}
+							{path !== '' && (
+								<p className="truncate pl-6 text-xs text-secondary dark:text-zinc-400">
+									{path}
+								</p>
+							)}
+							{termName != null ? (
+								<p className="flex min-w-0 items-center gap-1.5 pl-6 text-xs text-secondary dark:text-zinc-400">
+									<Icon
+										name={SEARCH_TYPE_ICON[SearchObjectType.Term]}
+										className="h-3.5 w-3.5 shrink-0 text-secondary"
+									/>
+									<span className="shrink-0 text-secondary dark:text-zinc-500">
+										{t('Term:')}{' '}
+									</span>
+									<span className="min-w-0 truncate">{termName}</span>
+								</p>
+							) : null}
+						</Link>
+					</li>
+				);
+			})}
+		</ul>
+	);
+};

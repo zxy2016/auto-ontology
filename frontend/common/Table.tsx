@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import {
 	PaginationArrowButton,
 	PaginationItemRangeText,
@@ -46,16 +47,6 @@ const bodyCellClasses = <T,>(column: TableColumn<T>, cellClassName: string): str
 		column.className,
 	);
 
-const defaultRangeText = ({
-	firstItemIndex,
-	lastItemIndex,
-	totalItems,
-}: {
-	firstItemIndex: number;
-	lastItemIndex: number;
-	totalItems: number;
-}) => `${firstItemIndex}-${lastItemIndex} out of ${totalItems}`;
-
 export const Table = <T,>({
 	columns,
 	rows,
@@ -75,6 +66,7 @@ export const Table = <T,>({
 	rowClickIsPointerShortcut = false,
 	emptyMessage,
 }: TableProps<T>) => {
+	const t = useTranslation();
 	const baseRowClassName = rowClassName ?? DEFAULT_ROW;
 	const interactiveRowClassName = onRowClick
 		? cx(baseRowClassName, 'cursor-pointer')
@@ -177,12 +169,19 @@ export const Table = <T,>({
 					className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800"
 				>
 					<PaginationNavigationGroup withTabs>
-						<PaginationArrowButton direction="previous" />
+						<PaginationArrowButton
+							direction="previous"
+							aria-label={t('Go to previous page')}
+						/>
 						<PaginationPageList />
-						<PaginationArrowButton direction="next" />
+						<PaginationArrowButton direction="next" aria-label={t('Go to next page')} />
 					</PaginationNavigationGroup>
 					<PaginationItemRangeText
-						rangeTextFormatFn={pagination.rangeTextFormatFn ?? defaultRangeText}
+						rangeTextFormatFn={
+							pagination.rangeTextFormatFn ??
+							(({ firstItemIndex, lastItemIndex, totalItems }) =>
+								t('{1}-{2} out of {3}', firstItemIndex, lastItemIndex, totalItems))
+						}
 					/>
 				</PaginationRoot>
 			)}

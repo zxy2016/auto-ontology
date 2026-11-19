@@ -4,6 +4,8 @@
 
 'use client';
 
+import { Role } from '@/enums/auth';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut, useSession } from '@/auth/auth-client';
@@ -15,6 +17,7 @@ import { SelectButtonTheme } from '@/enums/button';
 import { TextVariant } from '@/enums/text';
 
 export const UserMenu = ({ version }: { version?: string }) => {
+	const t = useTranslation();
 	const { data } = useSession();
 	const router = useRouter();
 	const [signingOut, setSigningOut] = useState(false);
@@ -24,10 +27,8 @@ export const UserMenu = ({ version }: { version?: string }) => {
 	const { user } = data;
 	const initial = (user.name || user.email || '?').charAt(0).toUpperCase();
 	const fullName = user.name || user.email;
-	// Title-case the role, e.g. "admin" → "Admin".
-	const roleLabel = user.role
-		? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
-		: null;
+	const roleLabel =
+		user.role === Role.Admin ? t('Admin') : user.role === Role.Viewer ? t('Viewer') : user.role;
 
 	const canManageTokens = userCan(
 		{ id: user.id, role: user.role ?? null },
@@ -49,7 +50,7 @@ export const UserMenu = ({ version }: { version?: string }) => {
 				// clipped against, since the menu is otherwise as wide as its
 				// widest item.
 				<div className="w-56 px-3 py-1 text-xs text-secondary dark:text-zinc-500">
-					{version ? <p>Version {version}</p> : null}
+					{version ? <p>{t('Version {1}', version)}</p> : null}
 					<Text text={fullName} variant={TextVariant.Strong} />
 					{roleLabel ? <p className="text-[10px]">{roleLabel}</p> : null}
 				</div>
@@ -58,13 +59,13 @@ export const UserMenu = ({ version }: { version?: string }) => {
 				...(canManageTokens
 					? [
 							{
-								label: 'API Tokens',
+								label: t('API Tokens'),
 								onClick: () => router.push('/account/api-tokens'),
 							},
 						]
 					: []),
 				{
-					label: signingOut ? 'Signing out…' : 'Sign out',
+					label: signingOut ? t('Signing out…') : t('Sign out'),
 					onClick: () => {
 						void handleSignOut();
 					},
@@ -77,7 +78,7 @@ export const UserMenu = ({ version }: { version?: string }) => {
 					onClick={toggle}
 					aria-haspopup="menu"
 					aria-expanded={open}
-					aria-label="User menu"
+					aria-label={t('User menu')}
 				>
 					{initial}
 				</SelectButton>

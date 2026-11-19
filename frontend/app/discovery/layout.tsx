@@ -2,12 +2,10 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Metadata } from 'next';
+import { translatedMetadata } from '@/lib/i18n/server';
 import { requireUser } from '@/auth/auth-guards';
 
-export const metadata: Metadata = {
-	title: 'Discovery',
-};
+export const generateMetadata = () => translatedMetadata('Discovery');
 
 export default async function DiscoveryLayout({ children }: { children: React.ReactNode }) {
 	await requireUser();

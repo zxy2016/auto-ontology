@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Translate } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -75,11 +77,15 @@ type RuleTagFormProps = Pick<
  * is not only the cap — an untaggable kind is dropped wherever it ranked, and
  * "top" would read as a promise that the missing rows were the worst matches.
  */
-const itemsToTagLabel = (count: number, matched: number | undefined): string => {
-	const noun = count === 1 ? 'item' : 'items';
-	return matched != null && matched > count
-		? `${count} of ${matched} ${noun} to tag`
-		: `${count} ${noun} to tag`;
+const itemsToTagLabel = (count: number, matched: number | undefined, t: Translate): string => {
+	if (matched != null && matched > count) {
+		return t(
+			count === 1 ? '{1} of {2} item to tag' : '{1} of {2} items to tag',
+			count,
+			matched,
+		);
+	}
+	return t(count === 1 ? '{1} item to tag' : '{1} items to tag', count);
 };
 
 /**
@@ -97,6 +103,7 @@ const RuleTagForm = ({
 	onNavigate,
 	onDone,
 }: RuleTagFormProps) => {
+	const t = useTranslation();
 	const queryClient = useQueryClient();
 	const [selected, setSelected] = useState<TagChip[]>([]);
 	const [search, setSearch] = useState('');
@@ -144,7 +151,7 @@ const RuleTagForm = ({
 		setCreating(false);
 
 		if (response.error) {
-			setWriteError(response.message ?? 'Failed to create tag.');
+			setWriteError(response.message ?? t('Failed to create tag.'));
 			return;
 		}
 		const created = response.data;
@@ -188,10 +195,10 @@ const RuleTagForm = ({
 					className="h-4 w-4 shrink-0 self-center text-body dark:text-zinc-300"
 				/>
 				<h3 className="text-sm font-semibold text-heading dark:text-zinc-100">
-					Create a New Rule Based Tag
+					{t('Create a New Rule Based Tag')}
 				</h3>
 				<span className="text-xs text-secondary dark:text-zinc-400">
-					({itemsToTagLabel(itemsCount, matchedCount)})
+					({itemsToTagLabel(itemsCount, matchedCount, t)})
 				</span>
 			</div>
 
@@ -201,22 +208,23 @@ const RuleTagForm = ({
 						htmlFor="rule-name"
 						className="mb-1.5 block text-sm font-semibold text-heading dark:text-zinc-100"
 					>
-						Rule Name
+						{t('Rule Name')}
 					</label>
 					<input
 						id="rule-name"
 						type="text"
 						value={name}
 						onChange={(event) => setName(event.target.value)}
-						placeholder="Name This Rule and Save It!"
+						placeholder={t('Name This Rule and Save It!')}
 						autoFocus
 						// Same frame and height as the search field below it, so the two
 						// controls in this panel read as one set.
 						className="h-9 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-body outline-none transition-colors placeholder:text-secondary focus:border-[#76b900] focus:ring-2 focus:ring-[#76b900]/30 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder:text-zinc-500"
 					/>
 					<p className="mt-1.5 text-xs text-secondary dark:text-zinc-400">
-						Every item this search matches is labelled with these tags, and so is every
-						item that matches it later.
+						{t(
+							'Every item this search matches is labelled with these tags, and so is every item that matches it later.',
+						)}
 					</p>
 				</div>
 
@@ -226,7 +234,7 @@ const RuleTagForm = ({
 							name={IconName.Tag}
 							className="h-4 w-4 shrink-0 text-secondary dark:text-zinc-400"
 						/>
-						Add Tag/s…
+						{t('Add Tag/s…')}
 					</p>
 
 					{selected.length > 0 ? (
@@ -250,8 +258,8 @@ const RuleTagForm = ({
 						<SearchInput
 							value={search}
 							onChange={setSearch}
-							placeholder="Select or Search to Add a Tag…"
-							aria-label="Search tags"
+							placeholder={t('Select or Search to Add a Tag…')}
+							aria-label={t('Search tags')}
 							className="h-9 w-full"
 						/>
 						{/* Fixed rather than fitted: the panel hangs off its trigger, so a
@@ -269,7 +277,7 @@ const RuleTagForm = ({
 											className={`h-[26px] ${width}`}
 										/>
 									))}
-									<span className="sr-only">Loading tags</span>
+									<span className="sr-only">{t('Loading tags')}</span>
 								</div>
 							) : matches.length > 0 ? (
 								<ul className="flex flex-wrap gap-2">
@@ -296,15 +304,19 @@ const RuleTagForm = ({
 									className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-[#4d7a00] transition-colors hover:bg-[#76b900]/10 disabled:cursor-default disabled:opacity-60 dark:text-[#a3d63a] dark:hover:bg-[#76b900]/15"
 								>
 									<Icon name={IconName.Plus} className="h-4 w-4 shrink-0" />
-									{`${trimmedSearch} (Create Tag - Max. ${MAX_TAG_NAME_LENGTH})`}
+									{t(
+										'{1} (Create Tag - Max. {2})',
+										trimmedSearch,
+										MAX_TAG_NAME_LENGTH,
+									)}
 								</button>
 							) : (
 								<p className="px-2 text-xs text-secondary dark:text-zinc-400">
 									{options.length === 0
-										? 'No tags exist yet'
+										? t('No tags exist yet')
 										: unselected.length === 0
-											? 'Every tag is already selected'
-											: 'No tag matches this search'}
+											? t('Every tag is already selected')
+											: t('No tag matches this search')}
 								</p>
 							)}
 						</div>
@@ -325,7 +337,7 @@ const RuleTagForm = ({
 					className="inline-flex items-center gap-1.5 text-xs text-secondary no-underline transition-colors hover:text-[#4d7a00] dark:text-zinc-400 dark:hover:text-[#a3d63a]"
 				>
 					<Icon name={IconName.Tag} className="h-3.5 w-3.5 shrink-0" />
-					Manage Rule Based Tags
+					{t('Manage Rule Based Tags')}
 					<Icon name={IconName.Link} className="h-3.5 w-3.5 shrink-0" />
 				</Link>
 				<Button
@@ -338,7 +350,7 @@ const RuleTagForm = ({
 						void handleApply();
 					}}
 				>
-					{saving ? 'Applying…' : 'Apply'}
+					{saving ? t('Applying…') : t('Apply')}
 				</Button>
 			</div>
 		</>
@@ -358,31 +370,34 @@ export const RuleTagPopover = ({
 	onSubmit,
 	onNavigate,
 	onOpenChange,
-}: RuleTagPopoverProps) => (
-	<Popover
-		onOpenChange={onOpenChange}
-		panelClassName="w-[480px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-8rem)] overflow-y-auto"
-		trigger={({ toggle }) => (
-			<Button
-				theme={ButtonTheme.Secondary}
-				size={Size.REGULAR}
-				type="button"
-				onClick={toggle}
-				iconPosition="left"
-			>
-				<Icon name={IconName.Lightning} className="h-4 w-4" />
-				Create a Ruled Tag
-			</Button>
-		)}
-	>
-		{({ close }) => (
-			<RuleTagForm
-				itemsCount={itemsCount}
-				matchedCount={matchedCount}
-				onSubmit={onSubmit}
-				onNavigate={onNavigate}
-				onDone={close}
-			/>
-		)}
-	</Popover>
-);
+}: RuleTagPopoverProps) => {
+	const t = useTranslation();
+	return (
+		<Popover
+			onOpenChange={onOpenChange}
+			panelClassName="w-[480px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-8rem)] overflow-y-auto"
+			trigger={({ toggle }) => (
+				<Button
+					theme={ButtonTheme.Secondary}
+					size={Size.REGULAR}
+					type="button"
+					onClick={toggle}
+					iconPosition="left"
+				>
+					<Icon name={IconName.Lightning} className="h-4 w-4" />
+					{t('Create a Ruled Tag')}
+				</Button>
+			)}
+		>
+			{({ close }) => (
+				<RuleTagForm
+					itemsCount={itemsCount}
+					matchedCount={matchedCount}
+					onSubmit={onSubmit}
+					onNavigate={onNavigate}
+					onDone={close}
+				/>
+			)}
+		</Popover>
+	);
+};

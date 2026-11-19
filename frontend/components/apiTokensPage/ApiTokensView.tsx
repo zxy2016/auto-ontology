@@ -4,6 +4,8 @@
 
 'use client';
 
+import type { Message } from '@/types/i18n';
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useState } from 'react';
 import { apiTokensApi, type ApiToken } from '@/api/apiTokens';
 import type { ResponseWithError } from '@/api/types';
@@ -20,7 +22,7 @@ import { ToastVariant } from '@/enums/toast';
 import type { TableColumn } from '@/types/table';
 
 // `undefined` days = never expires, which is what an unattended script wants.
-const EXPIRY_OPTIONS: { label: string; days?: number }[] = [
+const EXPIRY_OPTIONS: { label: Message; days?: number }[] = [
 	{ label: 'Never' },
 	{ label: '30 days', days: 30 },
 	{ label: '90 days', days: 90 },
@@ -39,6 +41,7 @@ const isExpired = (token: ApiToken): boolean =>
  * refetched — the list can only ever show the leading characters.
  */
 export const ApiTokensView = () => {
+	const t = useTranslation();
 	const [tokens, setTokens] = useState<ApiToken[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -54,14 +57,17 @@ export const ApiTokensView = () => {
 	const [revokeBusy, setRevokeBusy] = useState(false);
 	const [revokeError, setRevokeError] = useState<string | null>(null);
 
-	const applyList = useCallback((res: ResponseWithError<ApiToken[]>) => {
-		if (res.error) {
-			setError(res.message ?? 'Failed to load API tokens.');
-			return;
-		}
-		setError(null);
-		setTokens(res);
-	}, []);
+	const applyList = useCallback(
+		(res: ResponseWithError<ApiToken[]>) => {
+			if (res.error) {
+				setError(res.message ?? t('Failed to load API tokens.'));
+				return;
+			}
+			setError(null);
+			setTokens(res);
+		},
+		[t],
+	);
 
 	const refresh = useCallback(async () => applyList(await apiTokensApi.list()), [applyList]);
 
@@ -87,7 +93,7 @@ export const ApiTokensView = () => {
 	const handleCreate = async () => {
 		const trimmed = name.trim();
 		if (!trimmed) {
-			setCreateError('Give the token a name so you can recognise it later.');
+			setCreateError(t('Give the token a name so you can recognise it later.'));
 			return;
 		}
 
@@ -97,7 +103,7 @@ export const ApiTokensView = () => {
 		setCreating(false);
 
 		if (res.error) {
-			setCreateError(res.message ?? 'Failed to create the token.');
+			setCreateError(res.message ?? t('Failed to create the token.'));
 			return;
 		}
 
@@ -114,7 +120,7 @@ export const ApiTokensView = () => {
 		setRevokeBusy(false);
 
 		if (res.error) {
-			setRevokeError(res.message ?? 'Failed to revoke the token.');
+			setRevokeError(res.message ?? t('Failed to revoke the token.'));
 			return;
 		}
 
@@ -125,17 +131,17 @@ export const ApiTokensView = () => {
 	const columns: TableColumn<ApiToken>[] = [
 		{
 			key: 'name',
-			header: 'Name',
+			header: t('Name'),
 			truncate: true,
 			cell: (token) => (
 				<span className="font-medium text-heading dark:text-zinc-100">
-					{token.name ?? 'Unnamed'}
+					{token.name ?? t('Unnamed')}
 				</span>
 			),
 		},
 		{
 			key: 'start',
-			header: 'Token',
+			header: t('Token'),
 			width: 'w-44',
 			nowrap: true,
 			cell: (token) => (
@@ -146,25 +152,25 @@ export const ApiTokensView = () => {
 		},
 		{
 			key: 'created_at',
-			header: 'Created',
+			header: t('Created'),
 			width: 'w-32',
 			nowrap: true,
 			cell: (token) => formatDate(token.created_at),
 		},
 		{
 			key: 'last_request',
-			header: 'Last Used',
+			header: t('Last Used'),
 			width: 'w-32',
 			nowrap: true,
-			cell: (token) => (token.last_request ? formatDate(token.last_request) : 'Never'),
+			cell: (token) => (token.last_request ? formatDate(token.last_request) : t('Never')),
 		},
 		{
 			key: 'expires_at',
-			header: 'Expires',
+			header: t('Expires'),
 			width: 'w-32',
 			nowrap: true,
 			cell: (token) => {
-				if (!token.expires_at) return 'Never';
+				if (!token.expires_at) return t('Never');
 				return (
 					<span
 						className={isExpired(token) ? 'text-red-600 dark:text-red-400' : undefined}
@@ -176,7 +182,7 @@ export const ApiTokensView = () => {
 		},
 		{
 			key: 'actions',
-			header: <span className="sr-only">Actions</span>,
+			header: <span className="sr-only">{t('Actions')}</span>,
 			width: 'w-16',
 			nowrap: true,
 			cell: (token) => (
@@ -184,7 +190,7 @@ export const ApiTokensView = () => {
 					theme={ButtonTheme.IconDanger}
 					size={Size.SMALL}
 					iconOnly
-					aria-label={`Revoke ${token.name ?? 'token'}`}
+					aria-label={t('Revoke {1}', token.name ?? t('Token'))}
 					onClick={() => {
 						setRevokeError(null);
 						setRevoking(token);
@@ -202,16 +208,17 @@ export const ApiTokensView = () => {
 				<div className="flex items-start justify-between gap-4">
 					<div className="min-w-0">
 						<h1 className="text-base font-semibold text-heading dark:text-zinc-100">
-							API Tokens
+							{t('API Tokens')}
 						</h1>
 						<p className="mt-1 text-xs text-secondary dark:text-zinc-400">
-							Call the Auto Ontology API from scripts without signing in. A token acts
-							as you — it can do exactly what your account can, and nothing more.
+							{t(
+								'Call the Auto Ontology API from scripts without signing in. A token acts as you — it can do exactly what your account can, and nothing more.',
+							)}
 						</p>
 					</div>
 					<Button theme={ButtonTheme.Primary} size={Size.SMALL} onClick={openCreate}>
 						<Icon name={IconName.Plus} className="mr-1.5 h-4 w-4" />
-						New Token
+						{t('New Token')}
 					</Button>
 				</div>
 
@@ -220,12 +227,13 @@ export const ApiTokensView = () => {
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0">
 								<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">
-									Copy your token now
+									{t('Copy your token now')}
 								</h2>
 								<p className="mt-1 text-xs text-body dark:text-zinc-400">
-									Auto Ontology stores only a hash of it, so this is the one and
-									only time it can be shown. Send it as the <code>x-api-key</code>{' '}
-									header.
+									{t(
+										'Auto Ontology stores only a hash of the token, so it is shown only once. Send it as the {1} request header.',
+										'x-api-key',
+									)}
 								</p>
 							</div>
 							<Button
@@ -233,7 +241,7 @@ export const ApiTokensView = () => {
 								size={Size.SMALL}
 								onClick={() => setFreshToken(null)}
 							>
-								Done
+								{t('Done')}
 							</Button>
 						</div>
 						<div className="group mt-3 flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-2 dark:bg-zinc-950">
@@ -246,14 +254,16 @@ export const ApiTokensView = () => {
 				) : null}
 
 				{loading ? (
-					<p className="text-sm text-secondary dark:text-zinc-400">Loading…</p>
+					<p className="text-sm text-secondary dark:text-zinc-400">{t('Loading…')}</p>
 				) : null}
 
 				{!loading && tokens.length === 0 ? (
 					<EmptyState
 						icon={IconName.Key}
-						title="No API Tokens Yet"
-						description="Create one to authenticate scripts and scheduled jobs against the Auto Ontology API."
+						title={t('No API Tokens Yet')}
+						description={t(
+							'Create one to authenticate scripts and scheduled jobs against the Auto Ontology API.',
+						)}
 						variant={EmptyStateVariant.Dashed}
 					/>
 				) : null}
@@ -270,25 +280,25 @@ export const ApiTokensView = () => {
 			>
 				<div className="space-y-4 p-5">
 					<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">
-						New API token
+						{t('New API token')}
 					</h2>
 
 					<label className="block space-y-1.5">
 						<span className="text-xs font-medium text-body dark:text-zinc-300">
-							Name
+							{t('Name')}
 						</span>
 						<input
 							className={inputClassName}
 							value={name}
 							maxLength={64}
-							placeholder="nightly-report script"
+							placeholder={t('nightly-report script')}
 							onChange={(event) => setName(event.target.value)}
 						/>
 					</label>
 
 					<label className="block space-y-1.5">
 						<span className="text-xs font-medium text-body dark:text-zinc-300">
-							Expires
+							{t('Expires')}
 						</span>
 						<select
 							className={inputClassName}
@@ -297,7 +307,7 @@ export const ApiTokensView = () => {
 						>
 							{EXPIRY_OPTIONS.map((option, index) => (
 								<option key={option.label} value={index}>
-									{option.label}
+									{t(option.label)}
 								</option>
 							))}
 						</select>
@@ -313,7 +323,7 @@ export const ApiTokensView = () => {
 							size={Size.SMALL}
 							onClick={() => setCreateOpen(false)}
 						>
-							Cancel
+							{t('Cancel')}
 						</Button>
 						<Button
 							theme={ButtonTheme.Primary}
@@ -323,7 +333,7 @@ export const ApiTokensView = () => {
 								void handleCreate();
 							}}
 						>
-							{creating ? 'Creating…' : 'Create token'}
+							{creating ? t('Creating…') : t('Create token')}
 						</Button>
 					</div>
 				</div>
@@ -331,14 +341,12 @@ export const ApiTokensView = () => {
 
 			<ConfirmModal
 				open={revoking !== null}
-				title="Revoke Token"
-				message={
-					<>
-						Any script using <strong>{revoking?.name ?? 'this token'}</strong> will stop
-						working immediately. This cannot be undone.
-					</>
-				}
-				confirmLabel="Revoke"
+				title={t('Revoke Token')}
+				message={t(
+					'Any script using “{1}” will stop working immediately. This cannot be undone.',
+					revoking?.name ?? t('this token'),
+				)}
+				confirmLabel={t('Revoke')}
 				confirming={revokeBusy}
 				error={revokeError}
 				onConfirm={handleRevoke}

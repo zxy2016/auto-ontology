@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useRef } from 'react';
 import { UndirectedGraph } from 'graphology';
 import Sigma from 'sigma';
@@ -627,6 +628,7 @@ export const GraphCanvas = ({
 	onHoverNode,
 	onControllerChange,
 }: GraphCanvasProps) => {
+	const t = useTranslation();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const activeNodeIdRef = useRef<string | null>(activeNodeId);
 	const highlightedPathRef = useRef<{ nodeIds: Set<string>; edgeKeys: Set<string> } | null>(null);
@@ -1703,5 +1705,5 @@ export const GraphCanvas = ({
 		onSelectNode,
 	]);
 
-	return <div ref={containerRef} className="h-full w-full" aria-label="Exploration graph" />;
+	return <div ref={containerRef} className="h-full w-full" aria-label={t('Exploration graph')} />;
 };

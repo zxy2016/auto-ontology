@@ -2,6 +2,7 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Icon, IconName } from '@/common/icons';
 import { groupColorClass } from '@/lib/owners';
 import type { Owner } from '@/types/owners';
@@ -16,13 +17,14 @@ const initials = (name: string): string => {
 
 /** The owner's name, or "Unassigned" when the id names nobody. */
 export const OwnerLabel = ({ owner }: { owner?: OwnerLabelOwner | null }) => {
+	const t = useTranslation();
 	if (owner == null) {
 		return (
 			<span className="inline-flex min-w-0 items-center gap-2 text-sm text-body dark:text-zinc-300">
 				<span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-secondary dark:bg-zinc-700 dark:text-zinc-400">
 					<Icon name={IconName.User} className="h-3.5 w-3.5" />
 				</span>
-				<span className="truncate">Unassigned</span>
+				<span className="truncate">{t('Unassigned')}</span>
 			</span>
 		);
 	}

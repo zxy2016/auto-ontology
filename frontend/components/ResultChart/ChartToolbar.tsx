@@ -3,6 +3,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import type { FC } from 'react';
 import { ChevronDown, ChevronUp, Download } from '@/adapters/ui/icons';
 import { downloadCsv } from './export-csv';
@@ -14,30 +15,33 @@ export const ChartToolbar: FC<{
 	dataOpen: boolean;
 	dataId: string;
 	onToggleData: () => void;
-}> = ({ spec, dataOpen, dataId, onToggleData }) => (
-	<div className="result-chart-toolbar">
-		<button
-			type="button"
-			className="result-chart-tool"
-			aria-expanded={dataOpen}
-			aria-controls={dataOpen ? dataId : undefined}
-			onClick={onToggleData}
-		>
-			{dataOpen ? (
-				<ChevronUp className="h-3.5 w-3.5" />
-			) : (
-				<ChevronDown className="h-3.5 w-3.5" />
-			)}
-			{dataOpen ? 'Hide data' : 'Show data'}
-		</button>
-		<button
-			type="button"
-			className="result-chart-tool"
-			title="Download the Chart Data as CSV"
-			onClick={() => downloadCsv(spec)}
-		>
-			<Download className="h-3.5 w-3.5" />
-			CSV
-		</button>
-	</div>
-);
+}> = ({ spec, dataOpen, dataId, onToggleData }) => {
+	const t = useTranslation();
+	return (
+		<div className="result-chart-toolbar">
+			<button
+				type="button"
+				className="result-chart-tool"
+				aria-expanded={dataOpen}
+				aria-controls={dataOpen ? dataId : undefined}
+				onClick={onToggleData}
+			>
+				{dataOpen ? (
+					<ChevronUp className="h-3.5 w-3.5" />
+				) : (
+					<ChevronDown className="h-3.5 w-3.5" />
+				)}
+				{dataOpen ? t('Hide data') : t('Show data')}
+			</button>
+			<button
+				type="button"
+				className="result-chart-tool"
+				title={t('Download the Chart Data as CSV')}
+				onClick={() => downloadCsv(spec)}
+			>
+				<Download className="h-3.5 w-3.5" />
+				CSV
+			</button>
+		</div>
+	);
+};

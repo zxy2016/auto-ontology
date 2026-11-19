@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { Button } from '@/common/Button';
 import { Size, ButtonTheme } from '@/enums/button';
 import { Icon, IconName } from '@/common/icons';
@@ -31,12 +32,13 @@ export const ConnectionInfoCard = ({
 	ssoFederationPending = false,
 	disabled = false,
 }: ConnectionInfoCardProps) => {
+	const t = useTranslation();
 	const menuItems = [
 		...(onEdit == null
 			? []
 			: [
 					{
-						label: 'Edit',
+						label: t('Edit'),
 						icon: <Icon name={IconName.Pencil} className="h-3.5 w-3.5" />,
 						onClick: () => onEdit(connection),
 					},
@@ -45,7 +47,7 @@ export const ConnectionInfoCard = ({
 			? []
 			: [
 					{
-						label: 'Remove',
+						label: t('Remove'),
 						icon: <Icon name={IconName.Trash} className="h-3.5 w-3.5" />,
 						onClick: () => onDelete(connection.database_name),
 						danger: true,
@@ -90,7 +92,7 @@ export const ConnectionInfoCard = ({
 									iconOnly
 									type="button"
 									onClick={toggle}
-									aria-label={`Actions for ${connection.database_name}`}
+									aria-label={t('Actions for {1}', connection.database_name)}
 								>
 									<Icon name={IconName.DotsVertical} className="h-4 w-4" />
 								</Button>
@@ -114,12 +116,14 @@ export const ConnectionInfoCard = ({
 						/>
 						<span className="min-w-0">
 							<span className="block text-xs font-medium text-heading dark:text-zinc-200">
-								Authenticate as Signed-In User
+								{t('Authenticate as Signed-In User')}
 							</span>
 							<span className="block text-xs text-secondary dark:text-zinc-400">
 								{ssoFederationOn
-									? 'Chat runs SQL with each user’s own Databricks privileges.'
-									: 'Chat runs SQL with this connection’s stored access token.'}
+									? t('Chat runs SQL with each user’s own Databricks privileges.')
+									: t(
+											'Chat runs SQL with this connection’s stored access token.',
+										)}
 							</span>
 						</span>
 					</label>

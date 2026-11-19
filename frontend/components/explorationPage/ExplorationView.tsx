@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -187,6 +188,7 @@ const GraphCanvas = dynamic(
 );
 
 export const ExplorationView = () => {
+	const t = useTranslation();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const semanticId = searchParams.get('semanticId');
@@ -347,7 +349,7 @@ export const ExplorationView = () => {
 			if (cancelled) return;
 
 			if (response.error) {
-				setSemanticError(response.message ?? 'Failed to load terms');
+				setSemanticError(response.message ?? t('Failed to load terms'));
 				setSemanticLoading(false);
 				return;
 			}
@@ -363,7 +365,7 @@ export const ExplorationView = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [selectedDatabaseId]);
+	}, [selectedDatabaseId, t]);
 
 	const loadedDatabaseIdRef = useRef<string | null | undefined>(undefined);
 
@@ -386,7 +388,7 @@ export const ExplorationView = () => {
 				);
 				if (cancelled) return;
 				if (response.error) {
-					throw new Error(response.message ?? 'Failed to load data objects');
+					throw new Error(response.message ?? t('Failed to load data objects'));
 				}
 				const nextGraph = buildDataGraph(response.data ?? { nodes: [], links: [] });
 				if (cancelled) return;
@@ -395,7 +397,9 @@ export const ExplorationView = () => {
 			} catch (loadError) {
 				if (cancelled) return;
 				setDataError(
-					loadError instanceof Error ? loadError.message : 'Failed to load data objects',
+					loadError instanceof Error
+						? loadError.message
+						: t('Failed to load data objects'),
 				);
 			} finally {
 				if (!cancelled) {
@@ -408,7 +412,7 @@ export const ExplorationView = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [layer, selectedDatabaseId]);
+	}, [layer, selectedDatabaseId, t]);
 
 	useEffect(() => {
 		setActiveNodeId(activeNodeIdFromUrl);
@@ -606,7 +610,7 @@ export const ExplorationView = () => {
 				// the graph is shared instead of duplicated.
 				detailsResponse.data.queries.slice(0, TABLE_SQL_EXPAND_LIMIT).forEach((query) => {
 					const sqlNodeId = `sql:${query.id}`;
-					expansionNodes.push({ id: sqlNodeId, kind: 'sql', label: 'SQL Query' });
+					expansionNodes.push({ id: sqlNodeId, kind: 'sql', label: t('SQL Query') });
 					expansionEdges.push({ source: tableNode.id, target: sqlNodeId });
 					newEntities.set(sqlNodeId, {
 						id: sqlNodeId,
@@ -626,7 +630,7 @@ export const ExplorationView = () => {
 			activeController.addExpansion(tableNode.id, expansionNodes, expansionEdges);
 			mergeExpandedNodes(newEntities);
 		},
-		[isExpansionStale, mergeExpandedNodes],
+		[isExpansionStale, mergeExpandedNodes, t],
 	);
 
 	// Reverses `expandTableNode` on a double click of an already-expanded
@@ -1115,7 +1119,7 @@ export const ExplorationView = () => {
 				// would use for this Sql node (see `expandSqlAttributeNode`), so
 				// the two share one node instead of duplicating it.
 				const sqlNodeId = `sql:${sql.id}`;
-				expansionNodes.push({ id: sqlNodeId, kind: 'sql', label: 'SQL Query' });
+				expansionNodes.push({ id: sqlNodeId, kind: 'sql', label: t('SQL Query') });
 				expansionEdges.push({ source: columnEntity.id, target: sqlNodeId });
 				newEntities.set(sqlNodeId, {
 					id: sqlNodeId,
@@ -1220,7 +1224,7 @@ export const ExplorationView = () => {
 			activeController.addExpansion(columnEntity.id, expansionNodes, expansionEdges);
 			mergeExpandedNodes(newEntities);
 		},
-		[isExpansionStale, mergeExpandedNodes],
+		[isExpansionStale, mergeExpandedNodes, t],
 	);
 
 	// Reverses `expandColumnNode` — see `collapseExpansion`'s shared shape.
@@ -1282,7 +1286,7 @@ export const ExplorationView = () => {
 				// Prefixed like `column`/`attribute` above — a Sql node's own id
 				// could otherwise collide with some other kind's.
 				const sqlNodeId = `sql:${sql.id}`;
-				expansionNodes.push({ id: sqlNodeId, kind: 'sql', label: 'SQL Query' });
+				expansionNodes.push({ id: sqlNodeId, kind: 'sql', label: t('SQL Query') });
 				expansionEdges.push({ source: attributeEntity.id, target: sqlNodeId });
 				newEntities.set(sqlNodeId, {
 					id: sqlNodeId,
@@ -1299,7 +1303,7 @@ export const ExplorationView = () => {
 			activeController.addExpansion(attributeEntity.id, expansionNodes, expansionEdges);
 			mergeExpandedNodes(newEntities);
 		},
-		[isExpansionStale, mergeExpandedNodes],
+		[isExpansionStale, mergeExpandedNodes, t],
 	);
 
 	// Reverses `expandSqlAttributeNode` — see `collapseExpansion`'s shared
@@ -2141,13 +2145,13 @@ export const ExplorationView = () => {
 							onChange={setSearch}
 							placeholder={
 								layer === ExplorationLayer.Semantic
-									? 'Search terms…'
-									: 'Search data objects…'
+									? t('Search terms…')
+									: t('Search data objects…')
 							}
 							aria-label={
 								layer === ExplorationLayer.Semantic
-									? 'Search terms in exploration'
-									: 'Search data objects in exploration'
+									? t('Search terms in exploration')
+									: t('Search data objects in exploration')
 							}
 							className="h-10 bg-white shadow-md dark:bg-zinc-900"
 						/>
@@ -2197,7 +2201,7 @@ export const ExplorationView = () => {
 			{!loading && error != null && (
 				<div className="flex h-full items-center justify-center px-6 text-center">
 					<div className="rounded-xl border border-red-200 bg-white px-8 py-6 text-sm text-red-700 shadow-lg dark:border-red-900/50 dark:bg-zinc-900 dark:text-red-300">
-						Couldn&apos;t load exploration: {error}
+						{t("Couldn't load exploration:")} {error}
 					</div>
 				</div>
 			)}
@@ -2209,11 +2213,11 @@ export const ExplorationView = () => {
 					title={
 						layer === ExplorationLayer.Semantic
 							? selectedDatabaseId !== null
-								? 'No Terms Match This Filter'
-								: 'No Terms Created Yet'
+								? t('No Terms Match This Filter')
+								: t('No Terms Created Yet')
 							: selectedDatabaseId !== null
-								? 'No Data Objects Match This Filter'
-								: 'No Data Objects Found'
+								? t('No Data Objects Match This Filter')
+								: t('No Data Objects Found')
 					}
 				/>
 			)}
@@ -2302,27 +2306,29 @@ export const ExplorationView = () => {
 
 			<div className="absolute bottom-4 right-4 z-20 rounded-lg border border-zinc-200 bg-white px-3 py-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
 				<p className="text-xs text-secondary dark:text-zinc-400">
-					Viewing:{' '}
-					{layer === ExplorationLayer.Semantic ? 'Semantic Objects' : 'Data Objects'}
+					{t('Viewing:')}{' '}
+					{layer === ExplorationLayer.Semantic
+						? t('Semantic Objects')
+						: t('Data Objects')}
 				</p>
 				{layer === ExplorationLayer.Semantic ? (
 					<div className="mt-2 flex flex-col gap-1.5">
 						<LegendItem
 							kind="term"
 							icon={IconName.Terms}
-							label="Terms"
+							label={t('Terms')}
 							count={graph.nodes.length}
 						/>
 						<div className="flex items-center gap-3">
 							<LegendItem
 								kind="columnAttribute"
 								icon={IconName.Key}
-								label="Column Attribute"
+								label={t('Column Attribute')}
 							/>
 							<LegendItem
 								kind="sqlAttribute"
 								icon={IconName.ChartLine}
-								label="SQL Attribute"
+								label={t('SQL Attribute')}
 							/>
 						</div>
 						{/* A Term's own expansion (see `expandTermNode`) grafts on Data
@@ -2334,16 +2340,16 @@ export const ExplorationView = () => {
 						Data-layer kinds here as well, same as the Data-layer section
 						below. */}
 						<div className="flex items-center gap-3">
-							<LegendItem kind="table" icon={IconName.Table} label="Table" />
-							<LegendItem kind="schema" icon={IconName.Schema} label="Schema" />
-							<LegendItem kind="column" icon={IconName.Column} label="Column" />
+							<LegendItem kind="table" icon={IconName.Table} label={t('Table')} />
+							<LegendItem kind="schema" icon={IconName.Schema} label={t('Schema')} />
+							<LegendItem kind="column" icon={IconName.Column} label={t('Column')} />
 						</div>
 						<div className="flex items-center gap-3">
 							<LegendItem kind="sql" icon={IconName.CodeBracket} label="SQL" />
 							<LegendItem
 								kind="customAnalysis"
 								icon={IconName.ChartBar}
-								label="Custom Analysis"
+								label={t('Custom Analysis')}
 							/>
 						</div>
 					</div>
@@ -2351,9 +2357,9 @@ export const ExplorationView = () => {
 					<div className="mt-2 flex flex-col gap-1.5">
 						<div className="flex items-center gap-3">
 							{[
-								{ type: TableType.BASE_TABLE, label: 'Tables' },
-								{ type: TableType.VIEW, label: 'Views' },
-								{ type: TableType.MATERIALIZED_VIEW, label: 'Materialized' },
+								{ type: TableType.BASE_TABLE, label: t('Tables') },
+								{ type: TableType.VIEW, label: t('Views') },
+								{ type: TableType.MATERIALIZED_VIEW, label: t('Materialized') },
 							].map((item) => (
 								<LegendItem
 									key={item.type}
@@ -2365,13 +2371,13 @@ export const ExplorationView = () => {
 							))}
 						</div>
 						<div className="flex items-center gap-3">
-							<LegendItem kind="schema" icon={IconName.Schema} label="Schema" />
-							<LegendItem kind="column" icon={IconName.Column} label="Column" />
+							<LegendItem kind="schema" icon={IconName.Schema} label={t('Schema')} />
+							<LegendItem kind="column" icon={IconName.Column} label={t('Column')} />
 							<LegendItem kind="sql" icon={IconName.CodeBracket} label="SQL" />
 							<LegendItem
 								kind="customAnalysis"
 								icon={IconName.ChartBar}
-								label="Custom Analysis"
+								label={t('Custom Analysis')}
 							/>
 						</div>
 						{/* A Table's own expansion (see `expandTableNode`) grafts on
@@ -2380,16 +2386,16 @@ export const ExplorationView = () => {
 						covers those same three Semantic-layer kinds here as well,
 						same as the Semantic-layer section above. */}
 						<div className="flex items-center gap-3">
-							<LegendItem kind="term" icon={IconName.Terms} label="Term" />
+							<LegendItem kind="term" icon={IconName.Terms} label={t('Term')} />
 							<LegendItem
 								kind="columnAttribute"
 								icon={IconName.Key}
-								label="Column Attribute"
+								label={t('Column Attribute')}
 							/>
 							<LegendItem
 								kind="sqlAttribute"
 								icon={IconName.ChartLine}
-								label="SQL Attribute"
+								label={t('SQL Attribute')}
 							/>
 						</div>
 					</div>

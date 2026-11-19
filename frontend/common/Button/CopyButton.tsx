@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes } from 'react';
 
 import { Icon, IconName } from '@/common/icons';
@@ -44,6 +45,7 @@ export type CopyButtonProps = Omit<
 };
 
 export const CopyButton = ({ text, className = '', ...props }: CopyButtonProps) => {
+	const t = useTranslation();
 	const [copied, setCopied] = useState(false);
 	const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -68,7 +70,7 @@ export const CopyButton = ({ text, className = '', ...props }: CopyButtonProps) 
 			{...props}
 			type="button"
 			onClick={handleCopy}
-			aria-label={copied ? 'Copied to clipboard' : 'Copy to clipboard'}
+			aria-label={copied ? t('Copied to clipboard') : t('Copy to clipboard')}
 			className={`rounded p-1 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-700 hover:text-zinc-200 focus-visible:opacity-100 disabled:cursor-not-allowed ${className}`}
 		>
 			<Icon

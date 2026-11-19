@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Spinner } from '@nvidia/foundations-react-core';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -22,6 +23,7 @@ import { ChatInput } from './ChatInput';
 import { SemanticNotReady } from './SemanticNotReady';
 
 export const ChatView = () => {
+	const t = useTranslation();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -69,7 +71,7 @@ export const ChatView = () => {
 			setConversations(
 				summaries.map((s: ConversationSummary) => ({
 					id: s.id,
-					title: s.title || 'New conversation',
+					title: s.title || '',
 					messages: [],
 					createdAt: new Date(s.created_at).getTime(),
 				})),
@@ -228,7 +230,7 @@ export const ChatView = () => {
 			<main className="flex min-w-0 flex-1 flex-col">
 				{semanticReady == null ? (
 					<div className="flex flex-1 items-center justify-center">
-						<Spinner aria-label="Checking semantic layer" className="h-10 w-10" />
+						<Spinner aria-label={t('Checking semantic layer')} className="h-10 w-10" />
 					</div>
 				) : !semanticReady ? (
 					<SemanticNotReady />

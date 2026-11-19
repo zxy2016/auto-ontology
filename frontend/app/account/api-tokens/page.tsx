@@ -2,15 +2,13 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Metadata } from 'next';
+import { translatedMetadata } from '@/lib/i18n/server';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/auth/auth-guards';
 import { userCan } from '@/auth/permissions';
 import { ApiTokensView } from '@/components/apiTokensPage/ApiTokensView';
 
-export const metadata: Metadata = {
-	title: 'API Tokens',
-};
+export const generateMetadata = () => translatedMetadata('API Tokens');
 
 export default async function ApiTokensPage() {
 	const session = await requireUser();

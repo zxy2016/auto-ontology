@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import type { GraphStep } from '@/types/chat';
 import { Icon, IconName } from '@/common/icons';
 import { SqlBlock } from '@/common/SqlBlock';
@@ -29,6 +30,7 @@ const Dot = ({ delay }: { delay: string }) => (
 );
 
 export const ThinkingMessage = ({ steps, liveSql }: ThinkingMessageProps) => {
+	const t = useTranslation();
 	const activeStep = [...steps].reverse().find((s) => s.status === 'active');
 	const completedSteps = steps.filter((s) => s.status === 'completed');
 
@@ -47,7 +49,7 @@ export const ThinkingMessage = ({ steps, liveSql }: ThinkingMessageProps) => {
 						<Icon name={IconName.NvidiaLogo} className="h-4 w-4 text-[#76b900]" />
 					</div>
 					<span className="text-xs font-semibold text-body dark:text-zinc-200">
-						Auto Ontology Agent
+						{t('Auto Ontology Agent')}
 					</span>
 				</div>
 

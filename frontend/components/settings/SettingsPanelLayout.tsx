@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { type ReactNode } from 'react';
 import { BackPanelLayout } from '@/common/BackPanelLayout';
 import { SettingsNav } from '@/components/settings/SettingsNav';
@@ -17,13 +18,16 @@ type SettingsPanelLayoutProps = {
 export const SettingsPanelLayout = ({
 	children,
 	connectionsEnvManaged,
-}: SettingsPanelLayoutProps) => (
-	<BackPanelLayout
-		panelAriaLabel="Settings sections"
-		expandAriaLabel="Expand settings menu"
-		collapseAriaLabel="Collapse settings menu"
-		panel={<SettingsNav connectionsEnvManaged={connectionsEnvManaged} />}
-	>
-		{children}
-	</BackPanelLayout>
-);
+}: SettingsPanelLayoutProps) => {
+	const t = useTranslation();
+	return (
+		<BackPanelLayout
+			panelAriaLabel={t('Settings sections')}
+			expandAriaLabel={t('Expand settings menu')}
+			collapseAriaLabel={t('Collapse settings menu')}
+			panel={<SettingsNav connectionsEnvManaged={connectionsEnvManaged} />}
+		>
+			{children}
+		</BackPanelLayout>
+	);
+};

@@ -13,6 +13,9 @@ import {
 	dehydrate,
 	type DehydratedState,
 } from '@tanstack/react-query';
+import { LanguageSelect } from '@/common/LanguageSelect';
+import { LocaleProvider } from '@/contexts/LocaleContext';
+import { getLocale } from '@/lib/i18n/server';
 import { NavRail } from '@/common/NavRail';
 import { AppTopBar } from '@/common/AppTopBar';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
@@ -67,7 +70,8 @@ export const metadata: Metadata = {
  * them: they describe the deployment rather than a page, and a picker that
  * has to wait for its own read is the thing this exists to remove. The cost
  * is three internal reads per *full* page load — client navigations reuse
- * them — and none of the three is awaited.
+ * them. The connections settings page waits for its list so the server and
+ * browser render from the same initial query state.
  *
  * That is also why the dehydrated state has to carry the pending queries
  * themselves, dehydrated alongside what `defaultShouldDehydrateQuery` already
@@ -75,11 +79,12 @@ export const metadata: Metadata = {
  * show, and the browser subscribes to reads already in flight instead of
  * starting its own.
  */
-const prefetchSharedData = (userId: string): DehydratedState => {
+const prefetchSharedData = async (userId: string, pathname: string): Promise<DehydratedState> => {
 	const queryClient = new QueryClient();
 	void queryClient.prefetchQuery(tagQueries.vocabulary());
 	void queryClient.prefetchQuery(zoneQueries.list(userId));
-	void queryClient.prefetchQuery(connectionQueries.list());
+	const connections = queryClient.prefetchQuery(connectionQueries.list());
+	if (pathname === '/settings/connections') await connections;
 	return dehydrate(queryClient, {
 		shouldDehydrateQuery: (query) =>
 			defaultShouldDehydrateQuery(query) || query.state.status === 'pending',
@@ -91,7 +96,7 @@ export default async function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const session = await getCurrentSession();
+	const [session, locale] = await Promise.all([getCurrentSession(), getLocale()]);
 	const isAdmin = session?.user.role === Role.Admin;
 	// Injected at runtime by the Helm chart from the chart version (.Chart.Version).
 	const appVersion = process.env.APP_VERSION;
@@ -99,33 +104,41 @@ export default async function RootLayout({
 	const showAppChrome = Boolean(session) && !isLoginOrOauthPath(pathname);
 	// Only read where `showAppChrome` holds, which is where there is a session.
 	const userId = session?.user.id ?? '';
+	const sharedData = showAppChrome ? await prefetchSharedData(userId, pathname) : undefined;
 
 	return (
 		<html
-			lang="en"
+			lang={locale}
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
 			<body className="flex h-full flex-col bg-white text-heading dark:bg-zinc-950 dark:text-zinc-100">
-				<QueryProvider>
-					<TooltipProvider openDelayDuration={400} skipDelayDuration={0}>
-						{showAppChrome ? (
-							// Only the signed-in app reads the shared lists; the login
-							// and consent screens have no picker to fill and no session
-							// to read them with.
-							<HydrationBoundary state={prefetchSharedData(userId)}>
-								<BreadcrumbProvider>
-									<AppTopBar version={appVersion} />
-									<div className="flex min-h-0 flex-1">
-										<NavRail isAdmin={isAdmin} />
-										<div className="min-w-0 flex-1">{children}</div>
+				<LocaleProvider locale={locale}>
+					<QueryProvider>
+						<TooltipProvider openDelayDuration={400} skipDelayDuration={0}>
+							{showAppChrome ? (
+								// Only the signed-in app reads the shared lists; the login
+								// and consent screens have no picker to fill and no session
+								// to read them with.
+								<HydrationBoundary state={sharedData}>
+									<BreadcrumbProvider>
+										<AppTopBar version={appVersion} />
+										<div className="flex min-h-0 flex-1">
+											<NavRail isAdmin={isAdmin} />
+											<div className="min-w-0 flex-1">{children}</div>
+										</div>
+									</BreadcrumbProvider>
+								</HydrationBoundary>
+							) : (
+								<>
+									<div className="absolute top-4 right-4 z-10">
+										<LanguageSelect />
 									</div>
-								</BreadcrumbProvider>
-							</HydrationBoundary>
-						) : (
-							children
-						)}
-					</TooltipProvider>
-				</QueryProvider>
+									{children}
+								</>
+							)}
+						</TooltipProvider>
+					</QueryProvider>
+				</LocaleProvider>
 			</body>
 		</html>
 	);

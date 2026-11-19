@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -82,12 +83,18 @@ const GlobalSearchTabsBar = ({
 	);
 };
 
-const GlobalSearchLimitBanner = () => (
-	<p className="shrink-0 px-3 py-2 text-sm text-secondary dark:text-zinc-400">
-		Viewing top {GLOBAL_SEARCH_LIST_LIMIT} results - Try filtering to get a more accurate search
-		results
-	</p>
-);
+const GlobalSearchLimitBanner = () => {
+	const t = useTranslation();
+
+	return (
+		<p className="shrink-0 px-3 py-2 text-sm text-secondary dark:text-zinc-400">
+			{t(
+				'Showing the top {1} results. Refine your filters for more accurate results.',
+				GLOBAL_SEARCH_LIST_LIMIT,
+			)}
+		</p>
+	);
+};
 
 type GlobalSearchBodyProps = {
 	showSkeleton: boolean;
@@ -107,37 +114,40 @@ const GlobalSearchBody = ({
 	error,
 	onRetry,
 	onNavigate,
-}: GlobalSearchBodyProps) => (
-	<div className="min-h-0 flex-1 overflow-y-auto" aria-busy={showSkeleton}>
-		{showSkeleton ? <GlobalSearchResultsSkeleton /> : null}
-		{items.length > 0 ? (
-			<GlobalSearchResults
-				items={items}
-				query={query}
-				// Constant, because this dialog offers no filters: it always
-				// searches descriptions, so a match in one is always a reason
-				// the row is here.
-				descriptionSearched={DEFAULT_SEARCH_FILTERS.description}
-				onNavigate={onNavigate}
-			/>
-		) : null}
-		{error !== null ? (
-			<EmptyState
-				variant={EmptyStateVariant.Borderless}
-				title="Search Is Unavailable"
-				description={error}
-				action={{ label: 'Try Again', onClick: onRetry }}
-			/>
-		) : null}
-		{showEmpty ? (
-			<EmptyState
-				variant={EmptyStateVariant.Borderless}
-				illustration={<Placeholders.NoResults />}
-				title="No Results Match Your Search"
-			/>
-		) : null}
-	</div>
-);
+}: GlobalSearchBodyProps) => {
+	const t = useTranslation();
+	return (
+		<div className="min-h-0 flex-1 overflow-y-auto" aria-busy={showSkeleton}>
+			{showSkeleton ? <GlobalSearchResultsSkeleton /> : null}
+			{items.length > 0 ? (
+				<GlobalSearchResults
+					items={items}
+					query={query}
+					// Constant, because this dialog offers no filters: it always
+					// searches descriptions, so a match in one is always a reason
+					// the row is here.
+					descriptionSearched={DEFAULT_SEARCH_FILTERS.description}
+					onNavigate={onNavigate}
+				/>
+			) : null}
+			{error !== null ? (
+				<EmptyState
+					variant={EmptyStateVariant.Borderless}
+					title={t('Search Is Unavailable')}
+					description={error}
+					action={{ label: t('Try Again'), onClick: onRetry }}
+				/>
+			) : null}
+			{showEmpty ? (
+				<EmptyState
+					variant={EmptyStateVariant.Borderless}
+					illustration={<Placeholders.NoResults />}
+					title={t('No Results Match Your Search')}
+				/>
+			) : null}
+		</div>
+	);
+};
 
 export type GlobalSearchModalProps = {
 	open: boolean;
@@ -156,6 +166,7 @@ export type GlobalSearchModalProps = {
  * and part of what gets stored.
  */
 export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => {
+	const t = useTranslation();
 	const router = useRouter();
 	const [query, setQuery] = useState('');
 	const [selectedTab, setSelectedTab] = useState(GLOBAL_SEARCH_ALL_TAB);
@@ -184,13 +195,13 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
 			.globalSearch(globalSearchRequest(trimmedQuery, selectedTab), abort)
 			.then((response) => {
 				if (abort.signal.aborted) return;
-				setListError(response.error ? (response.message ?? 'Request failed') : null);
+				setListError(response.error ? (response.message ?? t('Request failed')) : null);
 				setItems(globalSearchItemsFromResponse(response));
 				setResultKey(`${trimmedQuery}::${selectedTab}`);
 			});
 
 		return () => abort.abort();
-	}, [open, trimmedQuery, selectedTab, attempt]);
+	}, [open, trimmedQuery, selectedTab, attempt, t]);
 
 	useEffect(() => {
 		if (!open || trimmedQuery.length < GLOBAL_SEARCH_MIN_QUERY_LENGTH) return;
@@ -317,8 +328,8 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
 					<SearchInput
 						value={query}
 						onChange={handleQueryChange}
-						placeholder="Search…"
-						aria-label="Search Auto Ontology"
+						placeholder={t('Search…')}
+						aria-label={t('Search Auto Ontology')}
 						autoFocus
 						className="h-9 w-full"
 					/>
@@ -355,7 +366,7 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
 				className="flex shrink-0 cursor-pointer items-center gap-2 border-t border-zinc-200 px-4 py-2.5 text-sm text-blue-600 transition-colors hover:bg-zinc-50 hover:text-blue-700 dark:border-zinc-800 dark:text-blue-400 dark:hover:bg-zinc-900/60 dark:hover:text-blue-300"
 			>
 				<Icon name={IconName.Filter} className="h-4 w-4 shrink-0" />
-				Advanced Search
+				{t('Advanced Search')}
 			</button>
 		</Modal>
 	);
@@ -363,6 +374,7 @@ export const GlobalSearchModal = ({ open, onClose }: GlobalSearchModalProps) => 
 
 /** The top bar's search pill and the dialog it opens. */
 export const GlobalSearch = () => {
+	const t = useTranslation();
 	const [open, setOpen] = useState(false);
 
 	return (
@@ -370,7 +382,7 @@ export const GlobalSearch = () => {
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
-				aria-label="Search Auto Ontology"
+				aria-label={t('Search Auto Ontology')}
 				className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-full bg-blue-50 px-3 text-sm text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50"
 			>
 				<svg
@@ -385,7 +397,7 @@ export const GlobalSearch = () => {
 						clipRule="evenodd"
 					/>
 				</svg>
-				Search Auto Ontology
+				{t('Search Auto Ontology')}
 			</button>
 			<GlobalSearchModal open={open} onClose={() => setOpen(false)} />
 		</>

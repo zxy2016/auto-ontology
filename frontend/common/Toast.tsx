@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useTranslation } from '@/contexts/LocaleContext';
 import { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/common/Button';
@@ -73,13 +74,6 @@ const VariantIcon = ({ variant }: { variant: ToastVariant }) => {
 	);
 };
 
-const defaultTitle: Record<ToastVariant, string | undefined> = {
-	[ToastVariant.Error]: 'Error',
-	[ToastVariant.Success]: undefined,
-	[ToastVariant.Info]: undefined,
-	[ToastVariant.Loading]: undefined,
-};
-
 const capitalizeFirst = (value: string): string =>
 	value.length === 0 ? value : value.charAt(0).toUpperCase() + value.slice(1);
 
@@ -96,6 +90,7 @@ export const Toast = ({
 	variant = ToastVariant.Error,
 	onClose,
 }: ToastProps) => {
+	const t = useTranslation();
 	const mounted = useSyncExternalStore(
 		subscribeHydration,
 		getHydratedSnapshot,
@@ -104,7 +99,7 @@ export const Toast = ({
 
 	if (!mounted || !open) return null;
 
-	const resolvedTitle = title ?? defaultTitle[variant];
+	const resolvedTitle = title ?? (variant === ToastVariant.Error ? t('Error') : undefined);
 
 	return createPortal(
 		<div
@@ -128,7 +123,7 @@ export const Toast = ({
 					iconOnly
 					type="button"
 					onClick={onClose}
-					aria-label="Dismiss notification"
+					aria-label={t('Dismiss notification')}
 				>
 					<svg
 						viewBox="0 0 24 24"
