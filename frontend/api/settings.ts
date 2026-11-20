@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { requests } from './requests';
+import type { SemanticOutputLanguage } from '@/types/semanticCompilation';
 import type { ResponseWithError } from './types';
 
 export type Prompt = {
@@ -73,6 +74,7 @@ export const semanticCompilationApi = {
 		json<{
 			calculated: boolean;
 			running: boolean;
+			active_output_language?: SemanticOutputLanguage | null;
 			last_success_at: string | null;
 			last_failure_at: string | null;
 		}>('/api/semantic-compilation/status'),
@@ -96,6 +98,16 @@ export const distinctValueProbingApi = {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ enabled }),
 		}),
+};
+
+export const semanticOutputLanguageApi = {
+	set: (language: SemanticOutputLanguage) =>
+		requests.put<{ language: SemanticOutputLanguage }>(
+			'configurations/semantic-output-language',
+			{
+				language,
+			},
+		),
 };
 
 export const piiDetectionApi = {

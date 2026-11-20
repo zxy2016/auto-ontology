@@ -6,13 +6,20 @@
 
 from __future__ import annotations
 
+import logging
 import unicodedata
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from auto_ontology.semantic.cancellation import is_cancelled
 from auto_ontology.semantic.deterministic import _is_word_char, to_term_name
 from auto_ontology.semantic.domain import DomainSummary
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+    semantic_text_prompt,
+)
 from auto_ontology.utils.llm_invoke import (
     get_llm_client,
     invoke_with_structured_output,
@@ -24,10 +31,14 @@ from auto_ontology.semantic.models import (
     RawTableTermsResult,
     TableTermsResult,
     TermAttributeAssignment,
+    TermColumnRef,
     TermProposal,
 )
 
+logger = logging.getLogger(__name__)
 _INVALID = {"unnamed", "unknown", "none", ""}
+_TERM_COLUMN_LIMIT = 40
+_LABEL_BATCH_SIZE = 20
 
 
 def _is_display_label(label: str) -> bool:
@@ -56,16 +67,23 @@ Rules:
 table is a true junction between two unrelated entities. Never split a single \
 entity into separate Terms for its core fields versus its metadata, lifecycle, \
 or audit fields — those all belong to the same Term. If in doubt, use one Term.
-2. Term names must be user-friendly with spaces between words (e.g. Purchase Order, \
-not purchase_orders or PurchaseOrder).
+2. Use a natural business name and a short business definition for each Term.
 3. Assign EVERY candidate column to exactly one Term. For each assignment return \
-source_column exactly as given and a display_name — a user-friendly ColumnAttribute \
-label with spaces between words (e.g. Order Date, Total Amount).
+source_column exactly as given and a display_name — a user-friendly ColumnAttribute label.
 4. Do not propose IS_A, PART_OF, or ROLE relationships.
 5. If the table name contains a word that indicates it is a variant of another table \
-(e.g. ARC, ARCHIVE, HIST, HISTORY, STAGING, DELETED, TEMP), prefix every display_name \
-with a qualifying word derived from that suffix \
-(e.g. PEOPLE_ARC → "Archived Is Sales Person", ORDERS_HIST → "Historical Total Amount")."""
+(e.g. ARC, ARCHIVE, HIST, HISTORY, STAGING, DELETED, TEMP), qualify every display_name \
+to distinguish that variant using natural phrasing in the output language."""
+
+_LABEL_SYSTEM = """\
+Name the attributes for an existing business term over a relational table. \
+For each candidate return the exact source_column and a natural, concise display_name. \
+Use the table and column evidence. Qualify names for historical, archived, staging, \
+deleted or temporary tables. Preserve the meaning of each field."""
+
+
+class _ColumnLabels(BaseModel):
+    attributes: list[TermColumnRef]
 
 
 class _SynonymExtractionModel(BaseModel):
@@ -126,8 +144,14 @@ def apply_display_names_to_specs(
 def _fallback_result(
     table: dict[str, Any],
     specs: list[ColumnAttributeSpec],
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> TableTermsResult:
     name = to_term_name(table["name"])
+    description = (
+        f"由数据表 {table['name']} 表示的业务实体"
+        if output_language == "zh-CN"
+        else f"Business entity represented by table {table['name']}"
+    )
     attributes = [
         TermAttributeAssignment(
             source_column=spec.source_column,
@@ -139,7 +163,7 @@ def _fallback_result(
         terms=[
             TermProposal(
                 name=name,
-                description=f"Business entity represented by table {table['name']}",
+                description=description,
                 attributes=attributes,
             )
         ]
@@ -153,6 +177,7 @@ def _sanitize_result(
     *,
     table: dict[str, Any],
     specs: list[ColumnAttributeSpec],
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> TableTermsResult:
     spec_by_column = {spec.source_column: spec for spec in specs}
     allowed_columns = set(spec_by_column)
@@ -198,7 +223,7 @@ def _sanitize_result(
         )
 
     if not sanitized_terms:
-        return _fallback_result(table, specs)
+        return _fallback_result(table, specs, output_language)
 
     # Any unassigned columns fall back to the first Term.
     primary = sanitized_terms[0]
@@ -234,20 +259,72 @@ def _extract_synonyms(description: str) -> list[str]:
     return [s.strip() for s in result.synonyms if s.strip()]
 
 
+def generate_column_labels(
+    table: dict[str, Any],
+    term_name: str,
+    specs: list[ColumnAttributeSpec],
+    output_language: SemanticOutputLanguage,
+) -> dict[str, str]:
+    """Name columns separately from assigning them to a Term."""
+    labels: dict[str, str] = {}
+    for start in range(0, len(specs), _LABEL_BATCH_SIZE):
+        if is_cancelled():
+            break
+        batch = specs[start : start + _LABEL_BATCH_SIZE]
+        source_columns = {spec.source_column for spec in batch}
+        lines = "\n".join(_format_spec_line(spec) for spec in batch)
+        try:
+            result = invoke_with_structured_output(
+                get_llm_client(temperature=0.0, max_tokens=4096),
+                [
+                    SystemMessage(
+                        content=semantic_text_prompt(_LABEL_SYSTEM, output_language)
+                    ),
+                    HumanMessage(
+                        content=f"Table: {table['name']}\n"
+                        f"Description: {table.get('description') or ''}\n"
+                        f"Term: {term_name}\nColumns:\n{lines}"
+                    ),
+                ],
+                _ColumnLabels,
+            )
+        except Exception:
+            logger.warning(
+                "[%s] Could not generate column labels", table["name"], exc_info=True
+            )
+            continue
+        if result is None:
+            continue
+        for attr in result.attributes:
+            if attr.source_column in source_columns:
+                if label := _normalize_label(attr.display_name, fallback=""):
+                    labels.setdefault(attr.source_column, label)
+    if len(labels) < len(specs):
+        logger.warning(
+            "[%s] Using source-derived labels for %d column(s) without generated labels",
+            table["name"],
+            len(specs) - len(labels),
+        )
+    return labels
+
+
 def extract_term(
     table: dict[str, Any],
     ctx: dict[str, Any],
     specs: list[ColumnAttributeSpec],
     *,
     domain_summary: DomainSummary | None = None,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> TableTermsResult:
     """Propose one or more Terms and assign candidate column attributes to each."""
     if not specs:
-        return _fallback_result(table, specs)
+        return _fallback_result(table, specs, output_language)
 
     description = table.get("description") or ""
 
-    spec_lines = "\n".join(_format_spec_line(spec) for spec in specs[:40])
+    spec_lines = "\n".join(
+        _format_spec_line(spec) for spec in specs[:_TERM_COLUMN_LIMIT]
+    )
     domain_block = ""
     if domain_summary:
         domain_block = (
@@ -263,13 +340,42 @@ def extract_term(
     )
     result = invoke_with_structured_output(
         get_llm_client(temperature=0.0, max_tokens=4096),
-        [SystemMessage(content=_SYSTEM), HumanMessage(content=prompt)],
+        [
+            SystemMessage(content=semantic_text_prompt(_SYSTEM, output_language)),
+            HumanMessage(content=prompt),
+        ],
         RawTableTermsResult,
     )
-    if result is None:
-        return _fallback_result(table, specs)
+    if result is None or not result.terms:
+        logger.warning(
+            "[%s] Using source-derived labels after term generation failed",
+            table["name"],
+        )
+        return _fallback_result(table, specs, output_language)
 
-    table_result = _sanitize_result(result, table=table, specs=specs)
+    table_result = _sanitize_result(
+        result, table=table, specs=specs, output_language=output_language
+    )
+    # Complete labels for columns omitted by the first prompt, including wide
+    # tables, without asking the model to make a second decision about ownership.
+    generated_columns = {
+        attr.source_column.strip()
+        for term in result.terms
+        for attr in term.attributes
+        if _normalize_label(attr.display_name, fallback="")
+    }
+    specs_by_column = {spec.source_column: spec for spec in specs}
+    for term in table_result.terms:
+        missing = [
+            specs_by_column[attr.source_column]
+            for attr in term.attributes
+            if attr.source_column not in generated_columns
+        ]
+        labels = generate_column_labels(table, term.name, missing, output_language)
+        for attr in term.attributes:
+            if attr.source_column in labels:
+                attr.display_name = labels[attr.source_column]
+    apply_display_names_to_specs(table_result, specs)
 
     synonyms = _extract_synonyms(description)
     if synonyms:

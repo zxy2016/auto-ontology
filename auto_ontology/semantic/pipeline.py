@@ -20,6 +20,10 @@ from auto_ontology.infra.feature_flags import (
     is_semantic_fk_db_query_prevented,
 )
 from auto_ontology.semantic.cancellation import is_cancelled
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+)
 from auto_ontology.semantic.domain import DomainSummary, load_domain_summary
 from auto_ontology.semantic.embed import SemanticEmbedder
 from auto_ontology.semantic.models import ProcessTableResult
@@ -131,6 +135,7 @@ def compile_semantic_layer(
     *,
     domain_summary: DomainSummary | None = None,
     embedder: SemanticEmbedder | None = None,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> int:
     """Run full taxonomy compilation over every table in the store.
 
@@ -211,6 +216,7 @@ def compile_semantic_layer(
                 probe_distinct_values=is_probe_distinct_values,
                 probe_key_values=is_probe_key_values,
                 commit_slot=commit_slot,
+                output_language=output_language,
             )
         except Exception:
             logger.exception("Unexpected error processing table %s", table_name)

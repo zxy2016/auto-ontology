@@ -18,6 +18,21 @@
         "additionalProperties": true,
         "description": "The ingestion service's own status endpoint: whether a compilation pass\nis executing right now, when the last one finished successfully, and when\nit last failed (only set if more recent than the last success).",
         "properties": {
+          "active_output_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "en",
+                  "zh-CN"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Output Language"
+          },
           "last_failure_at": {
             "anyOf": [
               {

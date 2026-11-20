@@ -60,6 +60,7 @@ model Prompt {
 //
 // Known keys:
 //   semantic_compilation_enabled — "true"/"false", Settings > Semantic Compilation
+//   semantic_output_language     — "en"/"zh-CN", Settings > Semantic Compilation (defaults to "en")
 //   visualization_enabled        — "true"/"false", Settings > Agent Settings
 //                                  (auto-generate visualizations for SQL results;
 //                                   a missing row means enabled)

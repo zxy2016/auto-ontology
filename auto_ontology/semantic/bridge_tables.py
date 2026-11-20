@@ -31,6 +31,11 @@ from auto_ontology.dal.sql_attributes import (
 from auto_ontology.dal.terms import get_term_record_for_table
 from auto_ontology.semantic.constants import SQL_ATTR_SOURCE_BRIDGE
 from auto_ontology.server.sql_attributes.service import create_sql_attribute
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+    semantic_text_prompt,
+)
 from auto_ontology.utils.llm_invoke import (
     get_llm_client,
     invoke_with_structured_output,
@@ -150,6 +155,8 @@ def _pick_owner_term_id(
 
 def _generate_bridge_sql_attribute(
     candidate: dict[str, Any],
+    *,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> _BridgeSqlAttributeProposal | None:
     schema_name = candidate.get("schema_name") or ""
     table_name = candidate.get("table_name") or ""
@@ -179,11 +186,12 @@ def _generate_bridge_sql_attribute(
     llm = get_llm_client(temperature=0.0)
     messages = [
         SystemMessage(
-            content=(
+            content=semantic_text_prompt(
                 "You are an expert data engineer defining reusable join patterns "
                 "for many-to-many junction (bridge) tables. Bridge tables connect "
                 "entities through foreign keys, including self-referential cases "
-                "where multiple columns point at the same target table."
+                "where multiple columns point at the same target table.",
+                output_language,
             )
         ),
         HumanMessage(
@@ -202,8 +210,7 @@ def _generate_bridge_sql_attribute(
                 "or filters\n"
                 "  • no WHERE clause with literal business filters; structural "
                 "joins only\n"
-                "  • name — user-friendly Title Case label (e.g. 'Order Products', "
-                "'Also Buy')\n"
+                "  • name — natural, concise label matching the requested language\n"
                 "  • description — what relationship the junction represents\n"
             )
         ),
@@ -213,7 +220,11 @@ def _generate_bridge_sql_attribute(
     return result
 
 
-def build_bridge_tables_sql_attributes(database_name: str) -> int:
+def build_bridge_tables_sql_attributes(
+    database_name: str,
+    *,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+) -> int:
     """Discover bridge tables and persist join-pattern SqlAttributes.
 
     Returns the number of newly created SqlAttribute nodes.
@@ -247,7 +258,9 @@ def build_bridge_tables_sql_attributes(database_name: str) -> int:
             )
             continue
 
-        proposal = _generate_bridge_sql_attribute(candidate)
+        proposal = _generate_bridge_sql_attribute(
+            candidate, output_language=output_language
+        )
         if proposal is None:
             logger.warning(
                 "Bridge table %r: LLM returned no proposal — skipping.", table_name

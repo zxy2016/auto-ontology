@@ -13,6 +13,7 @@ import pytest
 
 from auto_ontology.infra import feature_flags
 from auto_ontology.infra.feature_flags import (
+    get_semantic_output_language,
     get_sql_query_timeout_seconds,
     is_distinct_value_probing_enabled,
     is_pii_detection_enabled,
@@ -65,6 +66,18 @@ def _patched(
         feature_flags.psycopg, "connect", lambda *a, **k: _Connection(cursor)
     )
     yield cursor
+
+
+@pytest.mark.parametrize(
+    ("row", "expected"),
+    [(None, "en"), (("en",), "en"), (("zh-CN",), "zh-CN"), (("fr",), "en")],
+)
+def test_reads_semantic_output_language(
+    monkeypatch: pytest.MonkeyPatch, row: tuple[str] | None, expected: str
+) -> None:
+    with _patched(monkeypatch, row) as cursor:
+        assert get_semantic_output_language() == expected
+    assert cursor.executed[0][1] == ("semantic_output_language",)
 
 
 @pytest.mark.parametrize(

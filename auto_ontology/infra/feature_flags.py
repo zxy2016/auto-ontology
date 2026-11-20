@@ -23,6 +23,10 @@ import os
 import psycopg
 
 from auto_ontology.infra.postgres import FRONTEND_SCHEMA, get_postgres_connection_string
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +34,7 @@ logger = logging.getLogger(__name__)
 # has never touched the toggle still probes, which is what every deployment
 # predating the toggle did.
 DISTINCT_VALUE_PROBING_ENABLED_KEY = "distinct_value_probing_enabled"
+SEMANTIC_OUTPUT_LANGUAGE_KEY = "semantic_output_language"
 
 # Written by the PII Settings tab. Opt-in: ingest does not classify columns
 # until an admin turns the toggle on.
@@ -103,6 +108,18 @@ def is_distinct_value_probing_enabled() -> bool:
     metered warehouse.
     """
     return read_configuration_flag(DISTINCT_VALUE_PROBING_ENABLED_KEY, default=True)
+
+
+def get_semantic_output_language() -> SemanticOutputLanguage:
+    """Read the language selected in Settings > Semantic Compilation."""
+    try:
+        row = _read_configuration_row(SEMANTIC_OUTPUT_LANGUAGE_KEY)
+    except Exception:
+        logger.exception("Failed to read semantic output language; using English")
+        return DEFAULT_SEMANTIC_OUTPUT_LANGUAGE
+    if row and row[0] == "zh-CN":
+        return "zh-CN"
+    return DEFAULT_SEMANTIC_OUTPUT_LANGUAGE
 
 
 #: An environment variable rather than a ``configurations`` row: it is an

@@ -40,6 +40,10 @@ from auto_ontology.semantic.deterministic import (
     fill_missing_column_descriptions,
     lacks_description,
 )
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+)
 from auto_ontology.semantic.domain import DomainSummary
 from auto_ontology.semantic.embed import _MAX_EMBEDDED_JSON_SAMPLE_LEN, SemanticEmbedder
 from auto_ontology.semantic.fk_suggester import (
@@ -839,6 +843,7 @@ def process_table(
     probe_distinct_values: bool = True,
     probe_key_values: bool = True,
     commit_slot: AbstractContextManager[None] | None = None,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> ProcessTableResult:
     """Build taxonomy nodes for one table: Term and ColumnAttributes.
 
@@ -943,7 +948,10 @@ def process_table(
     if undocumented:
         with _step(table_name, f"Describing {undocumented} undocumented column(s)"):
             fill_missing_column_descriptions(
-                table_id, non_fk_columns, columns_profiling_samples
+                table_id,
+                non_fk_columns,
+                columns_profiling_samples,
+                output_language=output_language,
             )
 
     # --- Build attribute specs for non-FK columns ---
@@ -958,7 +966,13 @@ def process_table(
 
     # --- LLM: propose Term(s) and display names ---
     with _step(table_name, f"Generating terms ({len(specs)} columns)"):
-        term_result = extract_term(table, ctx, specs, domain_summary=domain_summary)
+        term_result = extract_term(
+            table,
+            ctx,
+            specs,
+            domain_summary=domain_summary,
+            output_language=output_language,
+        )
     apply_display_names_to_specs(term_result, specs)
     spec_by_column = {spec.source_column: spec for spec in specs}
     persisted_terms = terms_with_assignments(term_result, spec_by_column)

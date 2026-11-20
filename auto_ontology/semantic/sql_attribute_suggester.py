@@ -35,6 +35,11 @@ from auto_ontology.server.sql_attributes.service import (
     SqlAttributeSqlError,
     create_sql_attribute,
 )
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+    semantic_text_prompt,
+)
 from auto_ontology.utils.llm_invoke import (
     get_llm_client,
     invoke_with_structured_output,
@@ -483,6 +488,8 @@ def _judge_with_llm(
     term_name: str,
     term_description: str,
     expressions: list[tuple[str, float]],
+    *,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> list[_SuggestedAttr]:
     """Ask the LLM whether any of *expressions* should become SqlAttributes."""
     if not expressions:
@@ -496,12 +503,13 @@ def _judge_with_llm(
     llm = get_llm_client(temperature=0.0)
     messages = [
         SystemMessage(
-            content=(
+            content=semantic_text_prompt(
                 "You are an expert data engineer reviewing SQL expressions to decide "
                 "which ones represent reusable business logic worth naming. "
                 "A SqlAttribute is a named, reusable SQL expression — a filter, "
                 "aggregation, or calculation — that captures a clear business concept "
-                "and is specific enough to be useful while general enough to recur."
+                "and is specific enough to be useful while general enough to recur.",
+                output_language,
             )
         ),
         HumanMessage(
@@ -560,10 +568,7 @@ def _judge_with_llm(
                 "     Ignore pure FK-only joins and UNION branches that select from a "
                 "single table with no join or filter.\n\n"
                 "For each chosen expression provide:\n"
-                "  • name — user-friendly Title Case label with spaces between words, "
-                "matching the ColumnAttribute naming style "
-                "(e.g. 'Active Customer Filter', 'Revenue Above Threshold', "
-                "'Last 90 Days Activity')\n"
+                "  • name — natural, concise label matching the requested language\n"
                 "  • description — what business logic it captures, why it matters for "
                 "this term, and when a data consumer would apply it\n"
                 "  • expression — the exact SQL expression copied verbatim\n\n"
@@ -581,7 +586,11 @@ def _judge_with_llm(
 # ---------------------------------------------------------------------------
 
 
-def suggest_sql_attributes(database_name: str) -> int:
+def suggest_sql_attributes(
+    database_name: str,
+    *,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+) -> int:
     """Suggest and persist SqlAttributes from query history for every Term.
 
     For each Term:
@@ -653,6 +662,7 @@ def suggest_sql_attributes(database_name: str) -> int:
             term_name,
             term_description,
             [(expr, score) for expr, score, _ in top],
+            output_language=output_language,
         )
 
         if not suggestions:

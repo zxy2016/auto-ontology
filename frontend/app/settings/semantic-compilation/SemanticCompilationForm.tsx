@@ -5,8 +5,12 @@
 'use client';
 
 import { useTranslation } from '@/contexts/LocaleContext';
-import { useEffect, useState } from 'react';
-import { distinctValueProbingApi, semanticCompilationApi } from '@/api/settings';
+import { useCallback, useEffect, useState } from 'react';
+import {
+	distinctValueProbingApi,
+	semanticCompilationApi,
+	semanticOutputLanguageApi,
+} from '@/api/settings';
 import { formatDate } from '@/common/date';
 import { Icon, IconName } from '@/common/icons';
 import { ConfirmModal } from '@/common/modal';
@@ -14,14 +18,25 @@ import { Spinner } from '@/common/Spinner';
 import { Toast } from '@/common/Toast';
 import { Toggle } from '@/common/Toggle';
 import { ToastVariant } from '@/enums/toast';
+import type { SemanticOutputLanguage } from '@/types/semanticCompilation';
+
+const LANGUAGES = [
+	{ value: 'zh-CN', label: '简体中文' },
+	{ value: 'en', label: 'English' },
+] as const;
+
+const languageLabel = (language: SemanticOutputLanguage) =>
+	language === 'zh-CN' ? '简体中文' : 'English';
 
 export const SemanticCompilationForm = ({
 	initialEnabled,
 	initialProbingEnabled,
+	initialOutputLanguage,
 	hasDatabases,
 }: {
 	initialEnabled: boolean;
 	initialProbingEnabled: boolean;
+	initialOutputLanguage: SemanticOutputLanguage;
 	hasDatabases: boolean;
 }) => {
 	const t = useTranslation();
@@ -30,23 +45,35 @@ export const SemanticCompilationForm = ({
 	const [enabled, setEnabled] = useState(initialEnabled);
 	const [probingEnabled, setProbingEnabled] = useState(initialProbingEnabled);
 	const [savingProbing, setSavingProbing] = useState(false);
+	const [outputLanguage, setOutputLanguage] = useState(initialOutputLanguage);
+	const [savingLanguage, setSavingLanguage] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [message, setMessage] = useState<string | null>(null);
 	const [running, setRunning] = useState(false);
+	const [activeOutputLanguage, setActiveOutputLanguage] = useState<SemanticOutputLanguage | null>(
+		null,
+	);
 	const [lastSuccessAt, setLastSuccessAt] = useState<string | null>(null);
 	const [lastFailureAt, setLastFailureAt] = useState<string | null>(null);
-	useEffect(() => {
+	const refreshStatus = useCallback(() => {
 		semanticCompilationApi
 			.getStatus()
 			.then((result) => {
 				setRunning(result.running);
+				setActiveOutputLanguage(result.active_output_language ?? null);
 				setLastSuccessAt(result.last_success_at);
 				setLastFailureAt(result.last_failure_at);
 			})
 			.catch(() => {});
 	}, []);
+	useEffect(refreshStatus, [refreshStatus]);
+	useEffect(() => {
+		if (!running) return;
+		const interval = window.setInterval(refreshStatus, 10000);
+		return () => window.clearInterval(interval);
+	}, [running, refreshStatus]);
 	// Only set when it's more recent than the last success (see history.py),
 	// so a stale failure never outlives the run that fixed it.
 	const failed = !running && lastFailureAt !== null;
@@ -57,7 +84,7 @@ export const SemanticCompilationForm = ({
 	const hasHistory = running || lastSuccessAt !== null || lastFailureAt !== null;
 
 	const handleToggle = async () => {
-		if (saving) return;
+		if (saving || savingLanguage) return;
 		const next = !enabled;
 		setSaving(true);
 		setError(null);
@@ -72,25 +99,33 @@ export const SemanticCompilationForm = ({
 					? t('Semantic compilation enabled — a compilation run has been triggered.')
 					: t('Semantic compilation disabled.'),
 			);
-			if (result.enabled) {
-				// Enabling triggers a run immediately (see the PUT route), so by the
-				// time this resolves the ingestion service has already inserted a
-				// history row and is very likely already running — refresh status
-				// so the section appears now instead of only on the next page load.
-				semanticCompilationApi
-					.getStatus()
-					.then((status) => {
-						setRunning(status.running);
-						setLastSuccessAt(status.last_success_at);
-						setLastFailureAt(status.last_failure_at);
-					})
-					.catch(() => {});
-			}
+			if (result.enabled) refreshStatus();
 		} catch {
 			setEnabled(!next); // roll back the optimistic update
 			setError(t('Failed to update semantic compilation. Please try again.'));
 		} finally {
 			setSaving(false);
+		}
+	};
+
+	const handleLanguageChange = async (language: SemanticOutputLanguage) => {
+		if (savingLanguage || saving || language === outputLanguage) return;
+		setSavingLanguage(true);
+		setError(null);
+		setMessage(null);
+
+		try {
+			const result = await semanticOutputLanguageApi.set(language);
+			if (result.error) throw new Error(result.message);
+			setOutputLanguage(result.language);
+			setMessage(
+				t('Semantic generation language saved. It applies from the next compilation run.'),
+			);
+			refreshStatus();
+		} catch {
+			setError(t('Failed to update the semantic generation language. Please try again.'));
+		} finally {
+			setSavingLanguage(false);
 		}
 	};
 
@@ -146,6 +181,44 @@ export const SemanticCompilationForm = ({
 						'When enabled, the ingestion service compiles the semantic layer for every connected database on startup and once every 24 hours. Enabling it also triggers a compilation run immediately.',
 					)}
 				</p>
+
+				<fieldset
+					aria-describedby="semantic-output-language-help"
+					className="mb-3 rounded-lg border border-zinc-200 px-4 pb-3 dark:border-zinc-700"
+					disabled={savingLanguage || saving}
+				>
+					<legend className="px-1 text-sm font-medium text-heading dark:text-zinc-100">
+						{t('Semantic Generation Language')}
+					</legend>
+					<div className="my-2 flex flex-wrap gap-5">
+						{LANGUAGES.map(({ value, label }) => (
+							<label key={value} className="flex items-center gap-2 text-sm">
+								<input
+									type="radio"
+									name="semantic-output-language"
+									value={value}
+									checked={outputLanguage === value}
+									onChange={() => handleLanguageChange(value)}
+								/>
+								<span lang={value}>{label}</span>
+							</label>
+						))}
+					</div>
+					<p id="semantic-output-language-help" className="text-xs text-secondary">
+						{t(
+							'Language for newly generated business terms, attribute names, and descriptions across all connected databases.',
+						)}
+					</p>
+					{running && activeOutputLanguage && activeOutputLanguage !== outputLanguage && (
+						<p role="status" className="mt-2 text-xs text-secondary">
+							{t(
+								'Current run uses {1}. The next run will use {2}.',
+								languageLabel(activeOutputLanguage),
+								languageLabel(outputLanguage),
+							)}
+						</p>
+					)}
+				</fieldset>
 
 				{!hasDatabases && (
 					<div className="mb-3 flex items-center rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
@@ -255,7 +328,7 @@ export const SemanticCompilationForm = ({
 							<Toggle
 								checked={enabled}
 								aria-label={t('Enable Semantic Compilation')}
-								disabled={saving}
+								disabled={saving || savingLanguage}
 								onChange={handleToggle}
 							/>
 						</div>
@@ -274,7 +347,7 @@ export const SemanticCompilationForm = ({
 								</div>
 								<button
 									type="button"
-									disabled={saving}
+									disabled={saving || savingLanguage}
 									onClick={() => setConfirmModalOpen(true)}
 									className="cursor-pointer rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/40"
 								>

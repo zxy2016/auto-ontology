@@ -10,11 +10,13 @@ import logging
 import os
 import time
 
+from auto_ontology.infra.feature_flags import get_semantic_output_language
 from auto_ontology.semantic.attribute_descriptions import describe_column_attributes
 from auto_ontology.semantic.bridge_tables import build_bridge_tables_sql_attributes
 from auto_ontology.semantic.cancellation import is_cancelled
 from auto_ontology.semantic.domain import DomainSummary, load_domain_summary
 from auto_ontology.semantic.embed import build_semantic_embedder
+from auto_ontology.semantic.language import SemanticOutputLanguage
 from auto_ontology.semantic.semantic_fk import resolve_semantic_fks
 from auto_ontology.semantic.term_families import resolve_term_families
 from auto_ontology.semantic.unmatched_fks import attach_unmatched_fk_columns
@@ -37,19 +39,25 @@ def run_semantic_compilation(
     database_name: str,
     *,
     domain_summary: DomainSummary | None = None,
+    output_language: SemanticOutputLanguage | None = None,
 ) -> int:
     """Compile semantic taxonomy, embed all nodes into the VDB, then resolve FK edges.
 
     Returns the number of tables processed.
     """
     with limit_inflight(SEMANTIC_LLM_MAX_INFLIGHT):
-        return _run_semantic_compilation(database_name, domain_summary=domain_summary)
+        return _run_semantic_compilation(
+            database_name,
+            domain_summary=domain_summary,
+            output_language=output_language or get_semantic_output_language(),
+        )
 
 
 def _run_semantic_compilation(
     database_name: str,
     *,
     domain_summary: DomainSummary | None = None,
+    output_language: SemanticOutputLanguage,
 ) -> int:
     """Body of :func:`run_semantic_compilation`, run under the concurrency bound."""
     summary = domain_summary or load_domain_summary(database_name)
@@ -68,6 +76,7 @@ def _run_semantic_compilation(
         database_name,
         domain_summary=summary,
         embedder=embedder,
+        output_language=output_language,
     )
 
     logger.info("=" * 60)
@@ -107,7 +116,7 @@ def _run_semantic_compilation(
     logger.info("Attaching unmatched FK columns…")
     logger.info("=" * 60)
     unmatched_count = attach_unmatched_fk_columns(
-        database_name, embedder, domain_summary=summary
+        database_name, embedder, domain_summary=summary, output_language=output_language
     )
     logger.info("Unmatched FK columns attached: %d", unmatched_count)
 
@@ -116,19 +125,23 @@ def _run_semantic_compilation(
     logger.info("=" * 60)
     logger.info("Suggesting SqlAttributes from query history…")
     logger.info("=" * 60)
-    attr_count = suggest_sql_attributes(database_name)
+    attr_count = suggest_sql_attributes(database_name, output_language=output_language)
     logger.info("New SqlAttribute nodes written: %d", attr_count)
 
     logger.info("=" * 60)
     logger.info("Building bridge tables sql attributes")
     logger.info("=" * 60)
-    bridge_table_count = build_bridge_tables_sql_attributes(database_name)
+    bridge_table_count = build_bridge_tables_sql_attributes(
+        database_name, output_language=output_language
+    )
     logger.info("Bridge tables built: %d", bridge_table_count)
 
     logger.info("=" * 60)
     logger.info("Describing ColumnAttributes…")
     logger.info("=" * 60)
-    described_count = describe_column_attributes(database_name)
+    described_count = describe_column_attributes(
+        database_name, output_language=output_language
+    )
     logger.info("ColumnAttributes described: %d", described_count)
 
     # One line carrying every stage's result. Until now the last thing a

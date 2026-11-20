@@ -18,7 +18,7 @@ API change.
 
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 from auto_ontology.server.models import (
     ApiModel as _Payload,  # extra="allow" base — see the module docstring
@@ -203,6 +203,7 @@ class HealthResponse(_Payload):
 class SemanticStatusResponse(_Payload):
     calculated: bool
     running: bool
+    active_output_language: Literal["en", "zh-CN"] | None = None
     last_success_at: str | None
     last_failure_at: str | None
 
@@ -213,6 +214,7 @@ class SemanticRunningResponse(_Payload):
     it last failed (only set if more recent than the last success)."""
 
     running: bool
+    active_output_language: Literal["en", "zh-CN"] | None = None
     last_success_at: str | None
     last_failure_at: str | None
 

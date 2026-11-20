@@ -1537,6 +1537,108 @@
         "x-auto-ontology-proxied": false
       }
     },
+    "/api/configurations/semantic-output-language": {
+      "get": {
+        "tags": ["configurations"],
+        "operationId": "get_api_configurations_semantic_output_language",
+        "responses": {
+          "200": {
+            "description": "The instance-wide language for generated semantic text. Defaults to English.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "language": {
+                      "type": "string",
+                      "enum": ["en", "zh-CN"]
+                    }
+                  },
+                  "required": ["language"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No authenticated caller could be resolved"
+          },
+          "403": {
+            "description": "The caller lacks the required permission"
+          }
+        },
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "x-auto-ontology-source": "frontend/app/api/configurations/semantic-output-language/route.ts",
+        "x-auto-ontology-permissions": {
+          "semanticCompilation": ["read"]
+        },
+        "x-auto-ontology-proxied": false
+      },
+      "put": {
+        "tags": ["configurations"],
+        "operationId": "put_api_configurations_semantic_output_language",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "enum": ["en", "zh-CN"]
+                  }
+                },
+                "required": ["language"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored language for future compilation runs. Saving does not trigger a run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "language": {
+                      "type": "string",
+                      "enum": ["en", "zh-CN"]
+                    }
+                  },
+                  "required": ["language"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body is not JSON, or the language is unsupported."
+          },
+          "401": {
+            "description": "No authenticated caller could be resolved"
+          },
+          "403": {
+            "description": "The caller lacks the required permission"
+          }
+        },
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "x-auto-ontology-source": "frontend/app/api/configurations/semantic-output-language/route.ts",
+        "x-auto-ontology-permissions": {
+          "semanticCompilation": ["manage"]
+        },
+        "x-auto-ontology-proxied": false
+      }
+    },
     "/api/configurations/sql-query-timeout": {
       "get": {
         "tags": ["configurations"],
@@ -11649,6 +11751,18 @@
       "SemanticStatusResponse": {
         "additionalProperties": true,
         "properties": {
+          "active_output_language": {
+            "anyOf": [
+              {
+                "enum": ["en", "zh-CN"],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Output Language"
+          },
           "calculated": {
             "title": "Calculated",
             "type": "boolean"

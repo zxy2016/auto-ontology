@@ -16,6 +16,11 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from auto_ontology.dal.datasources import store_column_descriptions
 from auto_ontology.semantic.date_format import is_date_type
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+    semantic_text_prompt,
+)
 from auto_ontology.semantic.models import ColumnAttributeSpec, ColumnDescriptionResult
 from auto_ontology.utils.catalog_reembed import refresh_catalog_embeddings
 from auto_ontology.utils.llm_invoke import (
@@ -108,6 +113,7 @@ def _get_column_samples(
 def _describe_column_batch(
     columns: list[dict[str, Any]],
     columns_profiling_samples: dict[str, dict[str, Any]],
+    output_language: SemanticOutputLanguage,
 ) -> dict[str, str]:
     """Ask the LLM for a business description of a single batch of columns.
 
@@ -123,7 +129,7 @@ def _describe_column_batch(
         lines.append(line)
 
     return describe_columns(
-        _DESCRIPTION_SYSTEM,
+        semantic_text_prompt(_DESCRIPTION_SYSTEM, output_language),
         "Columns:\n" + "\n".join(lines),
         [c.get("name", "") for c in columns if c.get("name")],
     )
@@ -181,6 +187,7 @@ def describe_columns(
 def _generate_column_descriptions(
     columns: list[dict[str, Any]],
     columns_profiling_samples: dict[str, dict[str, Any]] | None,
+    output_language: SemanticOutputLanguage,
 ) -> dict[str, str]:
     """Ask the LLM for a business description of each column.
 
@@ -201,12 +208,13 @@ def _generate_column_descriptions(
 
     descriptions: dict[str, str] = {}
     if len(batches) == 1:
-        return _describe_column_batch(batches[0], profiling)
+        return _describe_column_batch(batches[0], profiling, output_language)
 
     max_workers = min(len(batches), _DESCRIPTION_MAX_WORKERS)
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = [
-            pool.submit(_describe_column_batch, batch, profiling) for batch in batches
+            pool.submit(_describe_column_batch, batch, profiling, output_language)
+            for batch in batches
         ]
         for future in as_completed(futures):
             descriptions.update(future.result())
@@ -230,6 +238,8 @@ def fill_missing_column_descriptions(
     table_id: str,
     columns: list[dict[str, Any]],
     columns_profiling_samples: dict[str, dict[str, Any]] | None = None,
+    *,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> list[str]:
     """Give each of *columns* lacking a description a short generated one.
 
@@ -241,7 +251,9 @@ def fill_missing_column_descriptions(
     undocumented = [
         col for col in columns if col.get("name") and lacks_description(col)
     ]
-    generated = _generate_column_descriptions(undocumented, columns_profiling_samples)
+    generated = _generate_column_descriptions(
+        undocumented, columns_profiling_samples, output_language
+    )
     if not generated:
         return []
     written_ids = store_column_descriptions(table_id, generated)

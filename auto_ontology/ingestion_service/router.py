@@ -141,6 +141,7 @@ async def semantic_status(request: Request) -> dict[str, bool | str | None]:
     scheduler = request.app.state.semantic_scheduler
     return {
         "running": scheduler.running,
+        "active_output_language": scheduler.active_output_language,
         "last_success_at": get_last_successful_run(),
         "last_failure_at": get_last_failure_if_most_recent(),
     }

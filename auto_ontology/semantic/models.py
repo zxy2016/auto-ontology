@@ -30,10 +30,7 @@ class TermColumnRef(BaseModel):
     )
     display_name: str = Field(
         ...,
-        description=(
-            "User-friendly ColumnAttribute label with spaces between words "
-            "(e.g. Order Date, Total Amount)."
-        ),
+        description="User-friendly ColumnAttribute label in the requested language.",
     )
 
 
@@ -51,10 +48,7 @@ class RawTermProposal(BaseModel):
 
     name: str = Field(
         ...,
-        description=(
-            "User-friendly business Term name with spaces between words "
-            "(e.g. Purchase Order)."
-        ),
+        description="User-friendly business Term name in the requested language.",
     )
     description: str = Field(default="", description="Short business definition.")
     attributes: list[TermColumnRef] = Field(

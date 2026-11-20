@@ -22,7 +22,7 @@ from auto_ontology.ingestion_service.history import (
     get_last_successful_run,
 )
 from auto_ontology.server.ingestion.proxy import (
-    is_semantic_compilation_running,
+    get_live_semantic_compilation_status,
     trigger_semantic_compile,
     trigger_semantic_reset,
 )
@@ -68,9 +68,11 @@ def semantic_status() -> dict[str, bool | str | None]:
     on Postgres, so history stays visible even while it's down (see
     ``auto_ontology/server/ingestion/proxy.py``).
     """
+    running, active_output_language = get_live_semantic_compilation_status()
     return {
         "calculated": semantic_layer_calculated(),
-        "running": is_semantic_compilation_running(),
+        "running": running,
+        "active_output_language": active_output_language,
         "last_success_at": get_last_successful_run(),
         "last_failure_at": get_last_failure_if_most_recent(),
     }

@@ -3697,6 +3697,21 @@
       "SemanticStatusResponse": {
         "additionalProperties": true,
         "properties": {
+          "active_output_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "en",
+                  "zh-CN"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Output Language"
+          },
           "calculated": {
             "title": "Calculated",
             "type": "boolean"

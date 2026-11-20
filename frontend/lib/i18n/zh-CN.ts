@@ -260,6 +260,7 @@ export const zhCN = {
 	Discovery: '数据发现',
 	'Dismiss notification': '关闭通知',
 	'Distinct Value Scanning': '唯一值扫描',
+	'Current run uses {1}. The next run will use {2}.': '本次编译使用 {1}，下次编译将使用 {2}。',
 	'Distinct value scanning disabled — applies from the next compilation run.':
 		'已停用唯一值扫描，下次编译起生效。',
 	'Distinct value scanning enabled — applies from the next compilation run.':
@@ -370,6 +371,8 @@ export const zhCN = {
 		'更新唯一值扫描设置失败，请重试。',
 	'Failed to update PII detection. Please try again.': '更新个人身份信息检测设置失败，请重试。',
 	'Failed to update semantic compilation. Please try again.': '更新语义编译设置失败，请重试。',
+	'Failed to update the semantic generation language. Please try again.':
+		'更新语义生成语言失败，请重试。',
 	'Failed to update setting. Please try again.': '更新设置失败，请重试。',
 	'Failed to update SQL attribute': '更新 SQL 属性失败',
 	'Failed to update term': '更新术语失败',
@@ -697,6 +700,11 @@ export const zhCN = {
 	'Select Schemas': '选择模式',
 	'Selected ({1})': '已选择（{1}）',
 	'Semantic Compilation': '语义编译',
+	'Semantic Generation Language': '语义生成语言',
+	'Semantic generation language saved. It applies from the next compilation run.':
+		'已保存语义生成语言，将从下次编译开始生效。',
+	'Language for newly generated business terms, attribute names, and descriptions across all connected databases.':
+		'适用于所有已连接数据源中新生成的业务术语、属性名称和说明。',
 	'Semantic compilation disabled.': '已停用语义编译。',
 	'Semantic compilation enabled — a compilation run has been triggered.':
 		'已启用语义编译，并触发了一次编译。',

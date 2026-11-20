@@ -89,6 +89,7 @@ def store() -> Iterator[dict[str, MagicMock]]:
             return_value=("t2", "Employee Assignment"),
         ) as upsert,
         patch(f"{_MODULE}.extract_term") as extract,
+        patch(f"{_MODULE}.generate_column_labels", return_value={}),
         patch(f"{_MODULE}.find_unlinked_fk_columns") as unlinked,
     ):
         yield {

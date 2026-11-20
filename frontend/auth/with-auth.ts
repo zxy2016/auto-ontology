@@ -57,7 +57,7 @@ export function withPermission<C extends RouteContext = RouteContext>(
 	permissions: PermissionRequest,
 ) {
 	return (handler: AuthedHandler<C>) =>
-		async (req: Request, ctx: C = {} as C): Promise<Response> => {
+		async (req: Request, ctx: C): Promise<Response> => {
 			const user = await resolveUser();
 			if (!user) return unauthorized();
 			if (!userCan(user, permissions)) return forbidden();

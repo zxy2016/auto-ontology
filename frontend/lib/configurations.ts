@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getPrisma } from '@/lib/prisma';
+import type { SemanticOutputLanguage } from '@/types/semanticCompilation';
 
 /** Key in the `configurations` table written by Settings > Agent Settings. */
 export const VISUALIZATION_ENABLED_KEY = 'visualization_enabled';
@@ -16,6 +17,16 @@ export const SQL_QUERY_TIMEOUT_SECONDS_KEY = 'sql_query_timeout_seconds';
 
 /** Key written by the Distinct Value Scanning toggle on Settings > Semantic Compilation. */
 export const DISTINCT_VALUE_PROBING_ENABLED_KEY = 'distinct_value_probing_enabled';
+
+/** Key written by the Semantic Generation Language selection. */
+export const SEMANTIC_OUTPUT_LANGUAGE_KEY = 'semantic_output_language';
+
+export async function readSemanticOutputLanguage(): Promise<SemanticOutputLanguage> {
+	const row = await getPrisma().configuration.findUnique({
+		where: { key: SEMANTIC_OUTPUT_LANGUAGE_KEY },
+	});
+	return row?.value === 'zh-CN' ? 'zh-CN' : 'en';
+}
 
 /** Key written by the PII Detection toggle on Settings > PII Settings. */
 export const PII_DETECTION_ENABLED_KEY = 'pii_detection_enabled';

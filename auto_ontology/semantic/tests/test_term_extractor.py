@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import pytest
+from langchain_core.messages import BaseMessage
+from pydantic import BaseModel
 
 from auto_ontology.semantic.models import (
     ColumnAttributeSpec,
@@ -15,6 +17,7 @@ from auto_ontology.semantic.models import (
     TermColumnRef,
 )
 from auto_ontology.semantic import term_extractor
+from auto_ontology.semantic.language import SemanticOutputLanguage
 from auto_ontology.semantic.term_extractor import _sanitize_result
 
 
@@ -115,3 +118,62 @@ def test_sanitize_assigns_orphan_specs_to_primary_term() -> None:
 )
 def test_llm_labels_are_accepted_in_any_script(label: str, expected: str) -> None:
     assert term_extractor._normalize_label(label, fallback="Fallback") == expected
+
+
+@pytest.mark.parametrize(
+    ("language", "instruction", "term_name", "last_label"),
+    [
+        ("zh-CN", "Simplified Chinese", "销项发票", "价税合计"),
+        ("en", "English", "Sales Invoice", "Total With Tax"),
+    ],
+)
+def test_selected_language_reaches_term_and_wide_table_labels(
+    monkeypatch: pytest.MonkeyPatch,
+    language: SemanticOutputLanguage,
+    instruction: str,
+    term_name: str,
+    last_label: str,
+) -> None:
+    specs = [
+        ColumnAttributeSpec(
+            source_column=f"field_{i}", name=f"Field {i}", datatype="text"
+        )
+        for i in range(40)
+    ] + [ColumnAttributeSpec(source_column="total", name="Total", datatype="numeric")]
+    calls = []
+
+    def invoke(
+        _client: object, messages: list[BaseMessage], response_model: type[BaseModel]
+    ) -> BaseModel:
+        assert instruction in messages[0].content
+        calls.append(messages[1].content)
+        if response_model is RawTableTermsResult:
+            return RawTableTermsResult(
+                terms=[
+                    RawTermProposal(
+                        name=term_name,
+                        attributes=[
+                            TermColumnRef(
+                                source_column=spec.source_column,
+                                display_name=last_label,
+                            )
+                            for spec in specs[:-1]
+                        ],
+                    )
+                ]
+            )
+        return response_model.model_validate(
+            {"attributes": [{"source_column": "total", "display_name": last_label}]}
+        )
+
+    monkeypatch.setattr(term_extractor, "get_llm_client", lambda **kwargs: None)
+    monkeypatch.setattr(term_extractor, "invoke_with_structured_output", invoke)
+    result = term_extractor.extract_term(
+        {"name": "sales_invoices"}, {}, specs, output_language=language
+    )
+    assert len(calls) == 2 and "source_column=total" in calls[1]
+    assert len(result.terms) == 1 and result.terms[0].name == term_name
+    assert len(result.terms[0].attributes) == 41
+    assert result.terms[0].attributes[-1].source_column == "total"
+    assert result.terms[0].attributes[-1].display_name == last_label
+    assert specs[-1].display_name == last_label

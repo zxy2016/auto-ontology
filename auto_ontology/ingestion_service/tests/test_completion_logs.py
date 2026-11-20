@@ -408,7 +408,10 @@ def _patch_semantic_scheduler(
 
     monkeypatch.setattr(mod, "is_semantic_compilation_enabled", lambda: True)
     monkeypatch.setattr(mod, "resolve_database_names", lambda: databases)
-    monkeypatch.setattr(mod, "run_semantic_compilation", run)
+    monkeypatch.setattr(mod, "get_semantic_output_language", lambda: "en")
+    monkeypatch.setattr(
+        mod, "run_semantic_compilation", lambda db, *, output_language: run(db)
+    )
 
     async def _record_propagation(_label: str) -> None:
         _PROPAGATED.append(True)
@@ -416,6 +419,36 @@ def _patch_semantic_scheduler(
     _PROPAGATED.clear()
     monkeypatch.setattr(mod, "run_pii_propagation_in_thread", _record_propagation)
     return _stub_rules(monkeypatch, rules)
+
+
+def test_semantic_scheduler_uses_one_language_per_pass(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import auto_ontology.ingestion_service.semantic_scheduler as mod
+
+    _patch_semantic_scheduler(monkeypatch, ["pagila", "chinook"], lambda db: 0)
+    monkeypatch.setattr(mod, "record_run_start", lambda: None)
+    monkeypatch.setattr(mod, "record_run_finish", lambda *_: None)
+    configured = "zh-CN"
+    scheduler = SemanticScheduler()
+    seen: list[tuple[str, str]] = []
+
+    def compile_database(database: str, *, output_language: str) -> int:
+        nonlocal configured
+        assert scheduler.active_output_language == output_language
+        seen.append((database, output_language))
+        configured = "en"
+        return 1
+
+    monkeypatch.setattr(mod, "get_semantic_output_language", lambda: configured)
+    monkeypatch.setattr(mod, "run_semantic_compilation", compile_database)
+
+    asyncio.run(scheduler._run_once())
+    assert scheduler.active_output_language is None
+    assert seen == [("pagila", "zh-CN"), ("chinook", "zh-CN")]
+
+    asyncio.run(scheduler._run_once())
+    assert seen[2:] == [("pagila", "en"), ("chinook", "en")]
 
 
 def test_semantic_scheduler_reports_success_and_table_total(

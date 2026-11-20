@@ -33,10 +33,15 @@ from auto_ontology.semantic.deterministic import (
 )
 from auto_ontology.semantic.domain import DomainSummary
 from auto_ontology.semantic.embed import SemanticEmbedder
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+)
 from auto_ontology.semantic.models import ColumnAttributeSpec
 from auto_ontology.semantic.term_extractor import (
     apply_display_names_to_specs,
     extract_term,
+    generate_column_labels,
 )
 from auto_ontology.semantic.visit_enter import (
     commit_terms,
@@ -54,6 +59,7 @@ def attach_unmatched_fk_columns(
     embedder: SemanticEmbedder | None = None,
     *,
     domain_summary: DomainSummary | None = None,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
 ) -> int:
     """Attach every unlinked suspected FK column of *database_name*.
 
@@ -76,7 +82,11 @@ def attach_unmatched_fk_columns(
             break
         try:
             written += _attach_table(
-                table_id, column_names, embedder, domain_summary=domain_summary
+                table_id,
+                column_names,
+                embedder,
+                domain_summary=domain_summary,
+                output_language=output_language,
             )
         except Exception:
             logger.exception(
@@ -91,6 +101,7 @@ def _attach_table(
     embedder: SemanticEmbedder | None,
     *,
     domain_summary: DomainSummary | None,
+    output_language: SemanticOutputLanguage,
 ) -> int:
     table = fetch_table_by_id(table_id)
     if table is None:
@@ -101,7 +112,9 @@ def _attach_table(
         col["name"]: {"sample_values": parse_sample_values(col.get("sample_values"))}
         for col in columns
     }
-    fill_missing_column_descriptions(table_id, columns, profiling)
+    fill_missing_column_descriptions(
+        table_id, columns, profiling, output_language=output_language
+    )
     specs = column_attribute_specs(columns, [])
     if not specs:
         return 0
@@ -109,9 +122,11 @@ def _attach_table(
     with term_commit_lock:
         terms, _ = fetch_terms_and_attributes_for_table(table_id)
         if terms:
-            written = _attach_to_term(table, terms, specs)
+            written = _attach_to_term(table, terms, specs, output_language)
         else:
-            written = _attach_to_new_term(table, ctx, specs, domain_summary)
+            written = _attach_to_new_term(
+                table, ctx, specs, domain_summary, output_language
+            )
         if written and embedder is not None:
             _embed_table_terms(table, embedder)
     return written
@@ -121,6 +136,7 @@ def _attach_to_term(
     table: dict[str, Any],
     terms: list[dict[str, Any]],
     specs: list[ColumnAttributeSpec],
+    output_language: SemanticOutputLanguage,
 ) -> int:
     term = min(terms, key=lambda t: t["name"])
     if len(terms) > 1:
@@ -130,13 +146,14 @@ def _attach_to_term(
             len(terms),
             term["name"],
         )
+    labels = generate_column_labels(table, term["name"], specs, output_language)
     written = 0
     for spec in specs:
         if merge_column_attribute(
             term_name=term["name"],
             table_id=table["id"],
             source_column=spec.source_column,
-            attr_name=spec.display_name or spec.name,
+            attr_name=labels.get(spec.source_column) or spec.name,
             datatype=spec.datatype,
         ):
             written += 1
@@ -154,8 +171,15 @@ def _attach_to_new_term(
     ctx: dict[str, Any],
     specs: list[ColumnAttributeSpec],
     domain_summary: DomainSummary | None,
+    output_language: SemanticOutputLanguage,
 ) -> int:
-    term_result = extract_term(table, ctx, specs, domain_summary=domain_summary)
+    term_result = extract_term(
+        table,
+        ctx,
+        specs,
+        domain_summary=domain_summary,
+        output_language=output_language,
+    )
     apply_display_names_to_specs(term_result, specs)
     spec_by_column = {spec.source_column: spec for spec in specs}
     term_names: list[str] = []

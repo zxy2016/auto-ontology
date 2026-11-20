@@ -39,6 +39,7 @@ import logging
 import time
 from datetime import timedelta
 
+from auto_ontology.infra.feature_flags import get_semantic_output_language
 from auto_ontology.ingestion_service.config import is_semantic_compilation_enabled
 from auto_ontology.ingestion_service.connections import resolve_database_names
 from auto_ontology.ingestion_service.history import (
@@ -52,6 +53,7 @@ from auto_ontology.ingestion_service.rules import replay_rules_in_thread
 from auto_ontology.ingestion_service.scheduler import IntervalScheduler
 from auto_ontology.semantic.cancellation import clear_cancel, request_cancel
 from auto_ontology.semantic.compile import run_semantic_compilation
+from auto_ontology.semantic.language import SemanticOutputLanguage
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +94,7 @@ class SemanticScheduler(IntervalScheduler):
         # the module docstring. Optional so tests/callers that don't care about
         # the startup race can still construct one on its own.
         self._depends_on = depends_on
+        self.active_output_language: SemanticOutputLanguage | None = None
 
     def abort(self) -> None:
         """Stop the in-flight pass at the next *table*, not the next database.
@@ -159,7 +162,12 @@ class SemanticScheduler(IntervalScheduler):
             )
             return
 
-        logger.info("semantic: starting (%d database(s))", len(databases))
+        output_language = await asyncio.to_thread(get_semantic_output_language)
+        logger.info(
+            "semantic: starting (%d database(s), output language=%s)",
+            len(databases),
+            output_language,
+        )
         started = time.monotonic()
         succeeded = failed = 0
         total_tables = 0
@@ -171,6 +179,7 @@ class SemanticScheduler(IntervalScheduler):
         # which record_run_finish treats as a no-op — see history.py on why an
         # aborted run leaves the row NULL rather than storing an outcome.
         outcome: str | None = RUN_SUCCEEDED
+        self.active_output_language = output_language
         try:
             for index, database_name in enumerate(databases):
                 # Checked per database rather than once per pass, so a stop
@@ -200,7 +209,9 @@ class SemanticScheduler(IntervalScheduler):
                 try:
                     database_started = time.monotonic()
                     tables_processed = await asyncio.to_thread(
-                        run_semantic_compilation, database_name
+                        run_semantic_compilation,
+                        database_name,
+                        output_language=output_language,
                     )
                     succeeded += 1
                     total_tables += tables_processed
@@ -245,6 +256,7 @@ class SemanticScheduler(IntervalScheduler):
             await run_pii_propagation_in_thread(self.name)
             await self._reapply_rules()
         finally:
+            self.active_output_language = None
             # A no-op when outcome is None (stop/disable) — see
             # record_run_finish's docstring on why that leaves the row NULL
             # rather than recording an "aborted" outcome.

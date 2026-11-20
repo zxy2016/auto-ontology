@@ -29,6 +29,11 @@ from auto_ontology.dal.attributes import (
 from auto_ontology.semantic.cancellation import is_cancelled
 from auto_ontology.semantic.date_format import is_date_type
 from auto_ontology.semantic.deterministic import describe_columns
+from auto_ontology.semantic.language import (
+    DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+    SemanticOutputLanguage,
+    semantic_text_prompt,
+)
 from auto_ontology.utils.sample_values import stringify_sample_values
 
 logger = logging.getLogger(__name__)
@@ -57,7 +62,11 @@ placed the order"), not as a table and column name.
 - Return exactly one entry per column, using the physical column name."""
 
 
-def describe_column_attributes(database_name: str) -> int:
+def describe_column_attributes(
+    database_name: str,
+    *,
+    output_language: SemanticOutputLanguage = DEFAULT_SEMANTIC_OUTPUT_LANGUAGE,
+) -> int:
     """Write a description onto every undescribed attribute of *database_name*.
 
     Returns the number of attributes written.
@@ -90,7 +99,7 @@ def describe_column_attributes(database_name: str) -> int:
         if is_cancelled():
             return 0
         try:
-            return _describe_batch(batch, references, referrers)
+            return _describe_batch(batch, references, referrers, output_language)
         except Exception:
             logger.exception(
                 "describe_column_attributes: failed for table %s",
@@ -109,10 +118,13 @@ def _describe_batch(
     batch: list[dict[str, Any]],
     references: dict[str, list[str]],
     referrers: dict[str, list[str]],
+    output_language: SemanticOutputLanguage,
 ) -> int:
     by_column = {row["column_name"]: row for row in batch}
     generated = describe_columns(
-        _SYSTEM, _prompt(batch, references, referrers), list(by_column)
+        semantic_text_prompt(_SYSTEM, output_language),
+        _prompt(batch, references, referrers),
+        list(by_column),
     )
     return store_attribute_descriptions(
         {by_column[name]["attribute_id"]: text for name, text in generated.items()}

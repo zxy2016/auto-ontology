@@ -16,6 +16,8 @@ from typing import Any
 
 import httpx
 
+from auto_ontology.semantic.language import SemanticOutputLanguage
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_INGESTION_SERVICE_URL = "http://localhost:3002"
@@ -52,34 +54,23 @@ def trigger_semantic_compile() -> None:
         logger.exception("Failed to trigger semantic compile via %s", url)
 
 
-def is_semantic_compilation_running() -> bool:
-    """Ask the ingestion service whether a compilation pass is executing right now.
-
-    This is the *only* part of semantic compilation status that genuinely
-    requires the live ingestion process — "running" is in-memory state on its
-    scheduler. ``last_success_at``/``last_failure_at`` are plain Postgres reads
-    (see ``auto_ontology/ingestion_service/history.py``) that the API server does
-    directly instead of relaying through here, precisely so a temporarily
-    unreachable ingestion service doesn't also wipe out history that has
-    nothing to do with it.
-
-    Best-effort: if the ingestion service can't be reached, this reports
-    ``False`` rather than raising, so a transient outage makes the settings
-    page look idle instead of stuck. Failures are logged as a one-line warning
-    rather than ``logger.exception`` — this is called on every settings-page
-    load, so a full traceback each time would flood the logs whenever the
-    ingestion service is simply not running (e.g. local dev).
-    """
+def get_live_semantic_compilation_status() -> tuple[
+    bool, SemanticOutputLanguage | None
+]:
+    """Read the scheduler's in-memory run state without depending on it for history."""
     url = f"{_base_url()}/semantic/status"
     try:
         response = httpx.get(url, timeout=_REQUEST_TIMEOUT)
         response.raise_for_status()
-        return bool(response.json().get("running", False))
+        data = response.json()
+        running = bool(data.get("running", False))
+        language = data.get("active_output_language") if running else None
+        return running, language if language in ("en", "zh-CN") else None
     except Exception as exc:
         logger.warning(
             "Failed to query semantic compilation status via %s: %s", url, exc
         )
-        return False
+        return False, None
 
 
 def trigger_semantic_reset(database_name: str | None = None) -> None:
